@@ -15,6 +15,13 @@
   <!-- Confetti para acreditaciones -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+  <!-- Firebase (Base de datos en la nube: Firestore) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+  <!-- EmailJS (Envío automático de correos con usuario y contraseña) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -206,6 +213,12 @@
               <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
             </button>
           </form>
+
+          <div id="link-self-register-wrap" class="text-center pt-1">
+            <button type="button" onclick="openSelfRegisterModal()" class="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline">
+              <i class="fa-solid fa-user-plus mr-1"></i> ¿Eres nuevo participante? Regístrate aquí
+            </button>
+          </div>
 
         </div>
       </div>
@@ -874,6 +887,55 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: AUTO-REGISTRO DE NUEVOS PARTICIPANTES ==================== -->
+  <div id="modal-self-register" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-black text-slate-900 text-base flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-brand-600"></i> Crear mi Cuenta de Participante
+        </h3>
+        <button type="button" onclick="closeSelfRegisterModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSelfRegisterSubmit(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-800 mb-1" for="selfreg-form-name">
+            Nombre Completo: *
+          </label>
+          <input id="selfreg-form-name" type="text" required placeholder="Ej. Lic. Laura Patricia Torres" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-800 mb-1" for="selfreg-form-email">
+            Correo Electrónico (será tu usuario): *
+          </label>
+          <input id="selfreg-form-email" type="email" required placeholder="tu.correo@ejemplo.com" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <div id="selfreg-error-msg" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
+          <span id="selfreg-error-text">Este correo ya está registrado.</span>
+        </div>
+
+        <div class="p-3 bg-brand-50 rounded-xl border border-brand-100 text-[11px] text-brand-900 leading-relaxed">
+          <i class="fa-solid fa-circle-info mr-1"></i>
+          Te generaremos una contraseña automáticamente y te la enviaremos por correo junto con tu usuario. Después deberás solicitar y esperar la autorización del administrador para acceder a cada curso.
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick="closeSelfRegisterModal()" class="px-4 py-2 border border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-100">
+            Cancelar
+          </button>
+          <button id="btn-selfreg-submit" type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Crear mi Cuenta
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     // Usuario actualmente autenticado
     let currentUser = null; // { role: 'admin' | 'student', username: '', name: '', id: '' }
@@ -882,15 +944,74 @@
     let editingCourseId = null;
     let editingStudentId = null;
 
-    // Configuración del Administrador Principal
+    // ==================== CONFIGURACION DE FIREBASE (BASE DE DATOS EN LA NUBE) ====================
+    // IMPORTANTE: reemplaza estos valores con los de TU propio proyecto de Firebase.
+    // 1) Ve a https://console.firebase.google.com -> Agregar proyecto.
+    // 2) Dentro del proyecto: icono de engrane -> Configuracion del proyecto -> Tus apps -> Web (</>) .
+    //    Copia el objeto firebaseConfig que te muestre y pegalo abajo.
+    // 3) En el menu lateral "Compilacion" -> "Firestore Database" -> Crear base de datos (modo produccion).
+    const firebaseConfig = {
+      apiKey: "AIzaSyANKCn9FMg6dWUtAGZG_qOoC-lltq0pzxQ",
+      authDomain: "be-safe-7e081.firebaseapp.com",
+      projectId: "be-safe-7e081",
+      storageBucket: "be-safe-7e081.firebasestorage.app",
+      messagingSenderId: "966582463837",
+      appId: "1:966582463837:web:6bf0cad182d444681f0cb4",
+      measurementId: "G-WCMNTZ10W3"
+    };
+
+    let firebaseReady = false;
+    let db = null;
+    try {
+      if (firebaseConfig.apiKey.indexOf('REEMPLAZA') === -1) {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        firebaseReady = true;
+      }
+    } catch (err) {
+      console.error('Firebase no se pudo inicializar. Revisa firebaseConfig.', err);
+    }
+
+    // ==================== CONFIGURACION DE EMAILJS (ENVIO AUTOMATICO DE CORREOS) ====================
+    // 1) Crea una cuenta en https://www.emailjs.com
+    // 2) Email Services -> Add New Service -> conecta tu cuenta de Gmail. Copia el "Service ID".
+    // 3) Email Templates -> Create New Template. Usa estas variables en el asunto/cuerpo:
+    //    {{to_name}}, {{to_email}}, {{user_username}}, {{user_password}}, {{login_url}}
+    //    Copia el "Template ID".
+    // 4) Account -> General -> copia tu "Public Key".
+    const EMAILJS_PUBLIC_KEY = "IVkd-8v_0JetMqZBv";
+    const EMAILJS_SERVICE_ID = "service_7pp55fq";
+    const EMAILJS_TEMPLATE_ID = "template_m59qqvh";
+    let emailjsReady = false;
+    try {
+      if (window.emailjs && EMAILJS_PUBLIC_KEY.indexOf('REEMPLAZA') === -1) {
+        emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+        emailjsReady = true;
+      }
+    } catch (err) {
+      console.error('EmailJS no se pudo inicializar.', err);
+    }
+
+    // Credenciales del Administrador Principal (acceso fijo, no se autoregistra)
     const ADMIN_CREDENTIALS = {
       username: 'admin',
       password: 'qwerty123',
-      name: 'Dirección Académica Admin'
+      name: 'Direccion Academica Admin'
     };
 
-    // Alumnos registrados con usuario y contraseña
-    let studentsDB = [
+    // Estas 3 listas son ahora una CACHE LOCAL sincronizada en tiempo real con Firestore
+    // (colecciones 'students', 'courses', 'enrollments'). Nunca se editan directamente:
+    // toda escritura va a Firestore y la cache se actualiza sola mediante onSnapshot.
+    let studentsDB = [];
+    let coursesData = [];
+    let enrollmentsDB = [];
+    let dbReady = false;
+
+    // Datos de ejemplo originales de la plataforma: se usan UNA SOLA VEZ para poblar
+    // Firestore la primera vez que el sitio corre contra un proyecto recien creado
+    // (vacio), de forma que no se pierda el contenido de demostracion original.
+    const DEFAULT_SEED = {
+      students: [
       {
         id: "student-1",
         name: "Lic. Carlos Mendoza Flores",
@@ -903,10 +1024,8 @@
         username: "maria",
         password: "pass123"
       }
-    ];
-
-    // Cursos con MÓDULOS ILIMITADOS y Cuestionario
-    let coursesData = [
+    ],
+      courses: [
       {
         id: "course-1",
         title: "Diplomado en Gestión Ágil y Liderazgo de Proyectos",
@@ -1018,10 +1137,8 @@
           }
         ]
       }
-    ];
-
-    // Registro de Inscripciones y Autorizaciones
-    let enrollmentsDB = [
+    ],
+      enrollments: [
       {
         id: "enr-1",
         studentId: "student-1",
@@ -1064,7 +1181,8 @@
         certCode: null,
         certDate: null
       }
-    ];
+    ]
+    };
 
     let tempFormModules = [];
     let tempFormQuestions = [];
@@ -1075,7 +1193,196 @@
       document.getElementById('cert-issue-date').textContent = `Fecha: ${today.toLocaleDateString('es-ES', options)}`;
       navigateTo('login');
       updateAdminDashboardStats();
+
+      if (!firebaseReady) {
+        showToast('Base de datos no configurada todavia: edita firebaseConfig en el codigo para activar el registro, guardado e inicio de sesion reales.', 'error');
+        return;
+      }
+
+      seedDatabaseIfEmpty()
+        .then(initFirestoreSync)
+        .catch(err => {
+          console.error(err);
+          showToast('No se pudo conectar con la base de datos: ' + err.message, 'error');
+        });
     });
+
+    // ==================== SINCRONIZACION EN TIEMPO REAL CON FIRESTORE ====================
+    async function seedDatabaseIfEmpty() {
+      const coursesSnap = await db.collection('courses').limit(1).get();
+      if (coursesSnap.empty) {
+        for (const c of DEFAULT_SEED.courses) {
+          const { id, ...data } = c;
+          await db.collection('courses').doc(id).set(data);
+        }
+      }
+      const studentsSnap = await db.collection('students').limit(1).get();
+      if (studentsSnap.empty) {
+        for (const s of DEFAULT_SEED.students) {
+          const { id, ...data } = s;
+          await db.collection('students').doc(id).set(data);
+        }
+      }
+      const enrollSnap = await db.collection('enrollments').limit(1).get();
+      if (enrollSnap.empty) {
+        for (const e of DEFAULT_SEED.enrollments) {
+          const { id, ...data } = e;
+          await db.collection('enrollments').doc(id).set(data);
+        }
+      }
+    }
+
+    function initFirestoreSync() {
+      db.collection('courses').onSnapshot(snap => {
+        coursesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        dbReady = true;
+        afterDataChange();
+      }, err => showToast('Error al sincronizar cursos: ' + err.message, 'error'));
+
+      db.collection('students').onSnapshot(snap => {
+        studentsDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        dbReady = true;
+        afterDataChange();
+      }, err => showToast('Error al sincronizar alumnos: ' + err.message, 'error'));
+
+      db.collection('enrollments').onSnapshot(snap => {
+        enrollmentsDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        dbReady = true;
+        afterDataChange();
+      }, err => showToast('Error al sincronizar inscripciones: ' + err.message, 'error'));
+    }
+
+    // Se ejecuta cada vez que llega una actualizacion en vivo desde Firestore,
+    // sin importar quien la haya provocado (tu, otro administrador u otro alumno).
+    function afterDataChange() {
+      updateAdminDashboardStats();
+
+      if (currentUser && currentUser.role === 'admin') {
+        const adminView = document.getElementById('view-admin-dashboard');
+        if (adminView && !adminView.classList.contains('hidden')) {
+          renderAdminAll();
+        }
+      }
+
+      if (currentUser && currentUser.role === 'student') {
+        const catalogView = document.getElementById('view-student-catalog');
+        if (catalogView && !catalogView.classList.contains('hidden')) {
+          renderStudentCatalog();
+        }
+        const classroomView = document.getElementById('view-classroom');
+        if (classroomView && !classroomView.classList.contains('hidden') && currentCourseId) {
+          const course = coursesData.find(c => c.id === currentCourseId);
+          if (course) {
+            renderClassroomModulesList(course);
+            updateClassroomProgressUI();
+          }
+        }
+      }
+    }
+
+    function generateRandomPassword() {
+      const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+      let pass = "";
+      for (let i = 0; i < 8; i++) {
+        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return pass;
+    }
+
+    // ==================== AUTO-REGISTRO PUBLICO DE PARTICIPANTES ====================
+    function openSelfRegisterModal() {
+      document.getElementById('selfreg-form-name').value = '';
+      document.getElementById('selfreg-form-email').value = '';
+      document.getElementById('selfreg-error-msg').classList.add('hidden');
+      const modal = document.getElementById('modal-self-register');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSelfRegisterModal() {
+      const modal = document.getElementById('modal-self-register');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function handleSelfRegisterSubmit(e) {
+      e.preventDefault();
+      const errorMsg = document.getElementById('selfreg-error-msg');
+      const errorText = document.getElementById('selfreg-error-text');
+      errorMsg.classList.add('hidden');
+
+      if (!firebaseReady) {
+        errorText.textContent = 'La base de datos aun no esta configurada. Contacta al administrador.';
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      const name = document.getElementById('selfreg-form-name').value.trim();
+      const email = document.getElementById('selfreg-form-email').value.trim().toLowerCase();
+
+      if (!name || !email) {
+        errorText.textContent = 'Completa tu nombre y correo electronico.';
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btn-selfreg-submit');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-60', 'pointer-events-none');
+
+      try {
+        const dupSnap = await db.collection('students').where('username', '==', email).get();
+        if (!dupSnap.empty) {
+          errorText.textContent = 'Ese correo ya tiene una cuenta registrada. Inicia sesion o recupera tu contrasena con el administrador.';
+          errorMsg.classList.remove('hidden');
+          return;
+        }
+
+        const password = generateRandomPassword();
+
+        await db.collection('students').add({
+          name,
+          username: email,
+          password,
+          selfRegistered: true,
+          createdAt: new Date().toISOString()
+        });
+
+        await sendCredentialsEmail({ name, email, username: email, password });
+
+        closeSelfRegisterModal();
+        toggleLoginTab('student');
+        document.getElementById('login-username').value = email;
+        document.getElementById('login-password').value = '';
+        showToast(`¡Cuenta creada, ${name}! Te enviamos tu usuario y contrasena por correo. Inicia sesion y solicita el curso que necesites.`, 'success');
+      } catch (err) {
+        console.error(err);
+        errorText.textContent = 'No se pudo completar el registro: ' + err.message;
+        errorMsg.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-60', 'pointer-events-none');
+      }
+    }
+
+    async function sendCredentialsEmail({ name, email, username, password }) {
+      if (!emailjsReady) {
+        showToast('Cuenta creada, pero el envio automatico de correo no esta configurado (EmailJS). Entrega la contrasena manualmente: ' + password, 'error');
+        return;
+      }
+      try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_name: name,
+          to_email: email,
+          user_username: username,
+          user_password: password,
+          login_url: window.location.href
+        });
+      } catch (err) {
+        console.error('Error enviando correo con EmailJS:', err);
+        showToast('Cuenta creada, pero el correo automatico fallo. Contrasena generada: ' + password, 'error');
+      }
+    }
 
     let activeLoginTab = 'student';
 
@@ -1095,12 +1402,16 @@
         labelUser.textContent = "Correo o Usuario de Alumno:";
         hintRole.textContent = "Asignada por el Administrador";
         userInput.placeholder = "carlos o carlos@campusvirtualsst.com";
+        const regLinkS = document.getElementById('link-self-register-wrap');
+        if (regLinkS) regLinkS.classList.remove('hidden');
       } else {
         btnAdmin.className = "py-2.5 rounded-xl bg-white text-brand-700 shadow-sm transition flex items-center justify-center gap-2 font-bold";
         btnStudent.className = "py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-2 font-bold";
         labelUser.textContent = "Usuario Administrador:";
         hintRole.textContent = "Acceso docente y directivo";
         userInput.placeholder = "admin";
+        const regLinkA = document.getElementById('link-self-register-wrap');
+        if (regLinkA) regLinkA.classList.add('hidden');
       }
     }
 
@@ -1143,8 +1454,14 @@
           errorMsg.classList.remove('hidden');
         }
       } else {
-        const student = studentsDB.find(s => 
-          (s.username.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase()) && 
+        if (!dbReady) {
+          errorText.textContent = "La base de datos aun se esta cargando, espera un momento e intenta de nuevo.";
+          errorMsg.classList.remove('hidden');
+          return;
+        }
+
+        const student = studentsDB.find(s =>
+          (s.username.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase()) &&
           s.password === pass
         );
 
@@ -1343,31 +1660,30 @@
       }).join('');
     }
 
-    function requestEnrollment(courseId) {
+    async function requestEnrollment(courseId) {
       if (!currentUser || currentUser.role !== 'student') return;
 
       const course = coursesData.find(c => c.id === courseId);
       if (!course) return;
 
-      const newEnrollment = {
-        id: 'enr-' + Date.now(),
-        studentId: currentUser.id,
-        studentUsername: currentUser.username,
-        studentName: currentUser.name,
-        courseId: course.id,
-        status: 'pending',
-        requestDate: new Date().toLocaleDateString('es-ES'),
-        completedModules: [],
-        examScore: null,
-        passed: false,
-        certCode: null,
-        certDate: null
-      };
-
-      enrollmentsDB.push(newEnrollment);
-      renderStudentCatalog();
-      updateAdminDashboardStats();
-      showToast(`¡Solicitud enviada para "${course.title}"! El administrador debe autorizar tu acceso.`, 'info');
+      try {
+        await db.collection('enrollments').add({
+          studentId: currentUser.id,
+          studentUsername: currentUser.username,
+          studentName: currentUser.name,
+          courseId: course.id,
+          status: 'pending',
+          requestDate: new Date().toLocaleDateString('es-ES'),
+          completedModules: [],
+          examScore: null,
+          passed: false,
+          certCode: null,
+          certDate: null
+        });
+        showToast(`¡Solicitud enviada para "${course.title}"! El administrador debe autorizar tu acceso.`, 'info');
+      } catch (err) {
+        showToast('No se pudo enviar la solicitud: ' + err.message, 'error');
+      }
     }
 
     function openClassroom(courseId) {
@@ -1448,20 +1764,28 @@
       loadActiveModule(course, currentModuleIndex + delta);
     }
 
-    function toggleCurrentModuleCompletion() {
+    async function toggleCurrentModuleCompletion() {
       const course = coursesData.find(c => c.id === currentCourseId);
       const enrollment = getActiveEnrollment();
       if (!course || !enrollment) return;
 
       const mod = course.modules[currentModuleIndex];
-      const idx = enrollment.completedModules.indexOf(mod.id);
+      const completed = enrollment.completedModules || [];
+      const idx = completed.indexOf(mod.id);
+      let updatedList;
 
       if (idx === -1) {
-        enrollment.completedModules.push(mod.id);
-        showToast(`¡Módulo "${mod.title}" marcado como completado!`, 'success');
+        updatedList = [...completed, mod.id];
       } else {
-        enrollment.completedModules.splice(idx, 1);
-        showToast('Módulo desmarcado.', 'info');
+        updatedList = completed.filter(id => id !== mod.id);
+      }
+
+      try {
+        await db.collection('enrollments').doc(enrollment.id).update({ completedModules: updatedList });
+        showToast(idx === -1 ? `¡Módulo "${mod.title}" marcado como completado!` : 'Módulo desmarcado.', idx === -1 ? 'success' : 'info');
+      } catch (err) {
+        showToast('No se pudo actualizar tu progreso: ' + err.message, 'error');
+        return;
       }
 
       loadActiveModule(course, currentModuleIndex);
@@ -1581,7 +1905,7 @@
       }).join('');
     }
 
-    function submitClassroomExam() {
+    async function submitClassroomExam() {
       const course = coursesData.find(c => c.id === currentCourseId);
       const enrollment = getActiveEnrollment();
       if (!course || !enrollment) return;
@@ -1610,10 +1934,20 @@
       const feedback = document.getElementById('quiz-submission-feedback');
 
       if (isApproved) {
-        enrollment.examScore = scorePercentage;
-        enrollment.passed = true;
-        enrollment.certCode = enrollment.certCode || ('SST-' + Math.floor(100000 + Math.random() * 900000));
-        enrollment.certDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        const certCode = enrollment.certCode || ('SST-' + Math.floor(100000 + Math.random() * 900000));
+        const certDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        try {
+          await db.collection('enrollments').doc(enrollment.id).update({
+            examScore: scorePercentage,
+            passed: true,
+            certCode,
+            certDate
+          });
+        } catch (err) {
+          showToast('No se pudo guardar tu resultado: ' + err.message, 'error');
+          return;
+        }
 
         feedback.innerHTML = `
           <span class="text-emerald-600 font-bold flex items-center gap-1.5">
@@ -1803,14 +2137,16 @@
       }).join('');
     }
 
-    function updateEnrollmentStatus(enrId, status) {
+    async function updateEnrollmentStatus(enrId, status) {
       const enr = enrollmentsDB.find(e => e.id === enrId);
       if (!enr) return;
 
-      enr.status = status;
-      renderAdminAuthorizationsTable();
-      updateAdminDashboardStats();
-      showToast(`El estado de inscripción de "${enr.studentName}" ahora es: ${status === 'approved' ? 'AUTORIZADO' : 'RECHAZADO'}.`, 'success');
+      try {
+        await db.collection('enrollments').doc(enrId).update({ status });
+        showToast(`El estado de inscripción de "${enr.studentName}" ahora es: ${status === 'approved' ? 'AUTORIZADO' : 'RECHAZADO'}.`, 'success');
+      } catch (err) {
+        showToast('No se pudo actualizar la inscripción: ' + err.message, 'error');
+      }
     }
 
     function renderAdminStudentsTable() {
@@ -1954,7 +2290,7 @@
       document.getElementById('student-form-pass').value = pass;
     }
 
-    function handleSaveStudent(e) {
+    async function handleSaveStudent(e) {
       e.preventDefault();
       const name = document.getElementById('student-form-name').value.trim();
       const username = document.getElementById('student-form-username').value.trim().toLowerCase();
@@ -1965,40 +2301,50 @@
         return;
       }
 
-      if (editingStudentId) {
-        const index = studentsDB.findIndex(s => s.id === editingStudentId);
-        if (index !== -1) {
-          studentsDB[index] = { ...studentsDB[index], name, username, password };
+      try {
+        if (editingStudentId) {
+          await db.collection('students').doc(editingStudentId).update({ name, username, password });
           showToast('Credenciales del participante actualizadas.', 'success');
-        }
-      } else {
-        if (studentsDB.some(s => s.username === username)) {
-          showToast('Ese nombre de usuario ya está asignado a otro alumno.', 'error');
-          return;
+        } else {
+          const dupSnap = await db.collection('students').where('username', '==', username).get();
+          if (!dupSnap.empty) {
+            showToast('Ese nombre de usuario ya está asignado a otro alumno.', 'error');
+            return;
+          }
+
+          await db.collection('students').add({
+            name,
+            username,
+            password,
+            selfRegistered: false,
+            createdAt: new Date().toISOString()
+          });
+          showToast(`Alumno "${name}" registrado con contraseña asignada.`, 'success');
         }
 
-        const newStudent = {
-          id: 'student-' + Date.now(),
-          name,
-          username,
-          password
-        };
-        studentsDB.push(newStudent);
-        showToast(`Alumno "${name}" registrado con contraseña asignada.`, 'success');
+        closeStudentModal();
+      } catch (err) {
+        showToast('No se pudo guardar el alumno: ' + err.message, 'error');
       }
-
-      closeStudentModal();
-      renderAdminStudentsTable();
-      updateAdminDashboardStats();
     }
 
-    function deleteStudent(studentId) {
-      studentsDB = studentsDB.filter(s => s.id !== studentId);
-      enrollmentsDB = enrollmentsDB.filter(e => e.studentId !== studentId);
-      renderAdminStudentsTable();
-      renderAdminAuthorizationsTable();
-      updateAdminDashboardStats();
-      showToast('Alumno y sus registros eliminados.', 'info');
+    async function deleteStudent(studentId) {
+      if (!confirm('¿Eliminar a este alumno y todas sus inscripciones? Esta acción no se puede deshacer.')) return;
+
+      try {
+        await db.collection('students').doc(studentId).delete();
+
+        const enrollSnap = await db.collection('enrollments').where('studentId', '==', studentId).get();
+        if (!enrollSnap.empty) {
+          const batch = db.batch();
+          enrollSnap.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+        }
+
+        showToast('Alumno y sus registros eliminados.', 'info');
+      } catch (err) {
+        showToast('No se pudo eliminar al alumno: ' + err.message, 'error');
+      }
     }
 
     function openCreateCourseModal() {
@@ -2195,7 +2541,7 @@
       if (tempFormQuestions[qIdx]) tempFormQuestions[qIdx].correct = optIdx;
     }
 
-    function saveCourseFromModal() {
+    async function saveCourseFromModal() {
       const title = document.getElementById('form-course-title').value.trim();
       const instructor = document.getElementById('form-course-instructor').value.trim();
       const category = document.getElementById('form-course-category').value.trim();
@@ -2227,48 +2573,48 @@
         }
       }
 
-      if (editingCourseId) {
-        const index = coursesData.findIndex(c => c.id === editingCourseId);
-        if (index !== -1) {
-          coursesData[index] = {
-            ...coursesData[index],
-            title,
-            instructor,
-            category: category || 'E-Learning',
-            duration: duration || '1h 30m',
-            passingScore,
-            description: description || 'Sin descripción.',
-            modules: tempFormModules,
-            questions: tempFormQuestions
-          };
-          showToast('¡Curso y módulos actualizados correctamente!', 'success');
-        }
-      } else {
-        const newCourse = {
-          id: 'course-' + Date.now(),
-          title,
-          instructor,
-          category: category || 'E-Learning',
-          duration: duration || '1h 30m',
-          passingScore,
-          description: description || 'Sin descripción.',
-          modules: tempFormModules,
-          questions: tempFormQuestions
-        };
-        coursesData.unshift(newCourse);
-        showToast('¡Nuevo curso publicado con sus módulos!', 'success');
-      }
+      const courseData = {
+        title,
+        instructor,
+        category: category || 'E-Learning',
+        duration: duration || '1h 30m',
+        passingScore,
+        description: description || 'Sin descripción.',
+        modules: tempFormModules,
+        questions: tempFormQuestions
+      };
 
-      closeCourseModal();
-      renderAdminAll();
-      if (currentUser && currentUser.role === 'student') renderStudentCatalog();
+      try {
+        if (editingCourseId) {
+          await db.collection('courses').doc(editingCourseId).update(courseData);
+          showToast('¡Curso y módulos actualizados correctamente!', 'success');
+        } else {
+          await db.collection('courses').add(courseData);
+          showToast('¡Nuevo curso publicado con sus módulos!', 'success');
+        }
+        closeCourseModal();
+      } catch (err) {
+        showToast('No se pudo guardar el curso: ' + err.message, 'error');
+      }
     }
 
-    function deleteCourse(courseId) {
-      coursesData = coursesData.filter(c => c.id !== courseId);
-      enrollmentsDB = enrollmentsDB.filter(e => e.courseId !== courseId);
-      renderAdminAll();
-      showToast('Curso eliminado de la plataforma.', 'info');
+    async function deleteCourse(courseId) {
+      if (!confirm('¿Eliminar este curso y todas las inscripciones relacionadas? Esta acción no se puede deshacer.')) return;
+
+      try {
+        await db.collection('courses').doc(courseId).delete();
+
+        const enrollSnap = await db.collection('enrollments').where('courseId', '==', courseId).get();
+        if (!enrollSnap.empty) {
+          const batch = db.batch();
+          enrollSnap.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+        }
+
+        showToast('Curso eliminado de la plataforma.', 'info');
+      } catch (err) {
+        showToast('No se pudo eliminar el curso: ' + err.message, 'error');
+      }
     }
 
     function resolveEmbedUrl(url) {
