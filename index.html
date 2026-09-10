@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EduMaster PRO - Plataforma E-Learning y Certificaciones</title>
+  <title>Campus Virtual de SST</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Inter, Playfair Display y Cinzel -->
@@ -103,7 +103,7 @@
         </div>
         <div>
           <span class="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5 leading-none">
-            EduMaster <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold bg-brand-50 text-brand-600 border border-brand-200 tracking-wider">PLATAFORMA</span>
+            Campus Virtual de SST
           </span>
           <p class="text-[11px] text-slate-400 font-medium mt-0.5">Gestión Académica, Módulos y Constancias</p>
         </div>
@@ -180,7 +180,7 @@
               </label>
               <div class="relative">
                 <i class="fa-regular fa-user absolute left-3.5 top-3 text-slate-400"></i>
-                <input id="login-username" type="text" required placeholder="alumno@edumaster.com" class="w-full pl-10 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+                <input id="login-username" type="text" required placeholder="alumno@campusvirtualsst.com" class="w-full pl-10 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
               </div>
             </div>
 
@@ -694,7 +694,7 @@
                   <i class="fa-solid fa-stamp text-xl"></i>
                   <span class="text-[8px] font-extrabold uppercase tracking-tighter">VALIDADO</span>
                 </div>
-                <span class="text-[9px] text-slate-400 font-mono mt-1" id="cert-code">ID: EDU-2026-9812</span>
+                <span class="text-[9px] text-slate-400 font-mono mt-1" id="cert-code">ID: SST-2026-9812</span>
               </div>
 
               <!-- Firma Dirección Académica -->
@@ -703,7 +703,7 @@
                   Dirección General
                 </div>
                 <div class="border-t border-slate-400 w-3/4 mx-auto"></div>
-                <p class="text-xs font-bold text-slate-800">EduMaster Academy</p>
+                <p class="text-xs font-bold text-slate-800">Campus Virtual de SST</p>
                 <p class="text-[10px] text-slate-400 uppercase" id="cert-issue-date">Fecha: 10 de Septiembre de 2026</p>
               </div>
             </div>
@@ -842,7 +842,7 @@
           <label class="block font-bold text-slate-800 mb-1" for="student-form-username">
             Usuario o Correo de Acceso: *
           </label>
-          <input id="student-form-username" type="text" required placeholder="laura.torres o laura@edumaster.com" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
+          <input id="student-form-username" type="text" required placeholder="laura.torres o laura@campusvirtualsst.com" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
         </div>
 
         <div>
@@ -1033,7 +1033,7 @@
         completedModules: ["m1", "m2", "m3"],
         examScore: 100,
         passed: true,
-        certCode: "EDU-2026-9812",
+        certCode: "SST-2026-9812",
         certDate: "10 de Septiembre de 2026"
       },
       {
@@ -1094,7 +1094,7 @@
         btnAdmin.className = "py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-2 font-bold";
         labelUser.textContent = "Correo o Usuario de Alumno:";
         hintRole.textContent = "Asignada por el Administrador";
-        userInput.placeholder = "carlos o carlos@edumaster.com";
+        userInput.placeholder = "carlos o carlos@campusvirtualsst.com";
       } else {
         btnAdmin.className = "py-2.5 rounded-xl bg-white text-brand-700 shadow-sm transition flex items-center justify-center gap-2 font-bold";
         btnStudent.className = "py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-2 font-bold";
@@ -1612,7 +1612,7 @@
       if (isApproved) {
         enrollment.examScore = scorePercentage;
         enrollment.passed = true;
-        enrollment.certCode = enrollment.certCode || ('EDU-' + Math.floor(100000 + Math.random() * 900000));
+        enrollment.certCode = enrollment.certCode || ('SST-' + Math.floor(100000 + Math.random() * 900000));
         enrollment.certDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
         feedback.innerHTML = `
