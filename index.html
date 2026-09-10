@@ -1883,26 +1883,64 @@
       listContainer.innerHTML = course.questions.map((q, qIndex) => {
         return `
           <div class="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 space-y-3" data-q-index="${qIndex}">
-            <div class="flex items-start gap-2.5">
-              <span class="flex-shrink-0 w-6 h-6 rounded-lg bg-brand-600 text-white font-bold text-xs flex items-center justify-center">
-                ${qIndex + 1}
-              </span>
-              <h4 class="font-bold text-slate-900 text-xs sm:text-sm leading-snug">
-                ${q.text}
-              </h4>
+            <div class="flex items-start justify-between gap-2.5">
+              <div class="flex items-start gap-2.5">
+                <span class="flex-shrink-0 w-6 h-6 rounded-lg bg-brand-600 text-white font-bold text-xs flex items-center justify-center">
+                  ${qIndex + 1}
+                </span>
+                <h4 class="font-bold text-slate-900 text-xs sm:text-sm leading-snug">
+                  ${q.text}
+                </h4>
+              </div>
+              <span class="quiz-question-status flex-shrink-0"></span>
             </div>
 
             <div class="grid grid-cols-1 gap-2 pt-1 sm:pl-8">
               ${q.options.map((opt, optIndex) => `
-                <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50/50 cursor-pointer transition text-xs select-none">
+                <label data-opt-index="${optIndex}" class="quiz-option-label flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50/50 cursor-pointer transition text-xs select-none">
                   <input type="radio" name="classroom-quiz-${qIndex}" value="${optIndex}" class="text-brand-600 focus:ring-brand-500 h-4 w-4">
-                  <span class="text-slate-700 font-medium">${opt}</span>
+                  <span class="text-slate-700 font-medium flex-1">${opt}</span>
                 </label>
               `).join('')}
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    function markClassroomQuizResults(course, results) {
+      results.forEach(({ qIdx, selectedIndex, isCorrect }) => {
+        const qContainer = document.querySelector(`#classroom-quiz-questions-list [data-q-index="${qIdx}"]`);
+        if (!qContainer) return;
+        const q = course.questions[qIdx];
+
+        const statusBadge = qContainer.querySelector('.quiz-question-status');
+        if (statusBadge) {
+          statusBadge.innerHTML = isCorrect
+            ? `<span class="text-emerald-600 font-bold text-[11px] flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-circle-check"></i> Correcta</span>`
+            : `<span class="text-rose-600 font-bold text-[11px] flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-circle-xmark"></i> Incorrecta</span>`;
+        }
+
+        qContainer.querySelectorAll('label.quiz-option-label').forEach(label => {
+          const optIndex = parseInt(label.dataset.optIndex, 10);
+          const radio = label.querySelector('input[type="radio"]');
+          if (radio) radio.disabled = true;
+
+          label.classList.remove('hover:border-brand-300', 'hover:bg-brand-50/50', 'cursor-pointer');
+          label.classList.add('cursor-default');
+
+          const existingBadge = label.querySelector('.quiz-result-badge');
+          if (existingBadge) existingBadge.remove();
+
+          if (optIndex === q.correct) {
+            label.classList.add('border-emerald-400', 'bg-emerald-50');
+            label.insertAdjacentHTML('beforeend', `<span class="quiz-result-badge ml-auto text-emerald-600 font-bold text-[10px] flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-circle-check"></i> Respuesta correcta</span>`);
+          } else if (optIndex === selectedIndex) {
+            label.classList.add('border-rose-400', 'bg-rose-50');
+            label.insertAdjacentHTML('beforeend', `<span class="quiz-result-badge ml-auto text-rose-600 font-bold text-[10px] flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-circle-xmark"></i> Tu respuesta</span>`);
+          }
+        });
+      });
     }
 
     async function submitClassroomExam() {
@@ -1912,15 +1950,18 @@
 
       let correctAnswersCount = 0;
       let allAnswered = true;
+      const results = [];
 
       course.questions.forEach((q, qIdx) => {
         const selected = document.querySelector(`input[name="classroom-quiz-${qIdx}"]:checked`);
         if (!selected) {
           allAnswered = false;
+          results.push({ qIdx, selectedIndex: null, isCorrect: false });
         } else {
-          if (parseInt(selected.value, 10) === q.correct) {
-            correctAnswersCount++;
-          }
+          const selectedIndex = parseInt(selected.value, 10);
+          const isCorrect = selectedIndex === q.correct;
+          if (isCorrect) correctAnswersCount++;
+          results.push({ qIdx, selectedIndex, isCorrect });
         }
       });
 
@@ -1928,6 +1969,8 @@
         showToast('Debes responder todas las preguntas antes de calificar.', 'error');
         return;
       }
+
+      markClassroomQuizResults(course, results);
 
       const scorePercentage = Math.round((correctAnswersCount / course.questions.length) * 100);
       const isApproved = scorePercentage >= course.passingScore;
