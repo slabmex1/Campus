@@ -307,7 +307,7 @@
                 <h1 id="active-module-title" class="text-xl sm:text-2xl font-black text-slate-900 mt-2">
                   Título del Módulo
                 </h1>
-                <p id="active-course-name" class="text-xs text-slate-400 font-medium mt-0.5">
+                <a id="course-material-link" href="#" target="_blank" rel="noopener" class="hidden mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600"><i class="fa-solid fa-paperclip"></i> Material general del curso</a><p id="active-course-name" class="text-xs text-slate-400 font-medium mt-0.5">
                   Curso: Fundamentos
                 </p>
               </div>
@@ -321,7 +321,7 @@
 
             <div class="border-t border-slate-100 pt-4">
               <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Notas y Contenido del Módulo:</h3>
-              <p id="active-module-desc" class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+              <a id="module-material-link" href="#" target="_blank" rel="noopener" class="hidden mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-brand-600 px-3.5 py-2 rounded-xl"><i class="fa-solid fa-download"></i> Descargar material de este módulo</a><p id="active-module-desc" class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
                 Descripción detallada del módulo...
               </p>
             </div>
@@ -808,6 +808,12 @@
           <div class="sm:col-span-2">
             <label class="block font-bold text-slate-800 mb-1" for="form-course-desc">Descripción General del Curso: *</label>
             <textarea id="form-course-desc" rows="2" placeholder="Resumen del contenido y metas pedagógicas..." class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-slate-800 mb-1" for="form-course-material-link">Link de Material General del Curso (opcional):</label>
+            <input id="form-course-material-link" type="text" placeholder="https://drive.google.com/... (aplica a todo el curso)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+            <p class="text-[10px] text-slate-400 mt-1">Opcional. Si lo llenas, se mostrará a los alumnos como material descargable de todo el curso.</p>
+          </div>
           </div>
 
           <div class="sm:col-span-2">
@@ -1854,7 +1860,7 @@
       document.getElementById('classroom-modules-count').textContent = `${course.modules ? course.modules.length : 0} módulos`;
       document.getElementById('classroom-quiz-min-score').textContent = `${course.passingScore}%`;
       document.getElementById('quiz-passing-score-display').textContent = `${course.passingScore}%`;
-      document.getElementById('quiz-student-name-display').textContent = currentUser.name;
+      document.getElementById('quiz-student-name-display').textContent = currentUser.name; const courseMaterialLinkEl = document.getElementById('course-material-link'); if (course.materialLink) { courseMaterialLinkEl.href = course.materialLink; courseMaterialLinkEl.classList.remove('hidden'); } else { courseMaterialLinkEl.classList.add('hidden'); courseMaterialLinkEl.removeAttribute('href'); }
 
       renderClassroomModulesList(course);
       loadActiveModule(course, 0);
@@ -1873,7 +1879,7 @@
 
       document.getElementById('active-module-indicator').textContent = `MÓDULO ${index + 1} DE ${course.modules.length}`;
       document.getElementById('active-module-title').textContent = mod.title;
-      document.getElementById('active-module-desc').textContent = mod.description || "Sin descripción adicional.";
+      document.getElementById('active-module-desc').textContent = mod.description || "Sin descripción adicional."; const moduleMaterialLinkEl = document.getElementById('module-material-link'); if (mod.materialLink) { moduleMaterialLinkEl.href = mod.materialLink; moduleMaterialLinkEl.classList.remove('hidden'); } else { moduleMaterialLinkEl.classList.add('hidden'); moduleMaterialLinkEl.removeAttribute('href'); }
 
       document.getElementById('btn-prev-module').disabled = (index === 0);
       document.getElementById('btn-next-module').disabled = (index === course.modules.length - 1);
@@ -2718,7 +2724,7 @@
       document.getElementById('form-course-category').value = '';
       document.getElementById('form-course-duration').value = '2 horas';
       document.getElementById('form-course-passing').value = 80;
-      document.getElementById('form-course-desc').value = '';
+      document.getElementById('form-course-desc').value = ''; document.getElementById('form-course-material-link').value = '';
 
       tempFormThumbnail = '';
       document.getElementById('form-course-thumb-input').value = '';
@@ -2729,7 +2735,7 @@
           id: "m-" + Date.now() + "-1",
           title: "Módulo 1: Introducción y Fundamentos",
           videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-          description: "Conceptos iniciales y objetivos de la lección."
+          description: "Conceptos iniciales y objetivos de la lección.", materialLink: ""
         }
       ];
 
@@ -2761,7 +2767,7 @@
       document.getElementById('form-course-category').value = course.category;
       document.getElementById('form-course-duration').value = course.duration;
       document.getElementById('form-course-passing').value = course.passingScore;
-      document.getElementById('form-course-desc').value = course.description;
+      document.getElementById('form-course-desc').value = course.description; document.getElementById('form-course-material-link').value = course.materialLink || '';
 
       tempFormThumbnail = course.thumbnailUrl || '';
       document.getElementById('form-course-thumb-input').value = '';
@@ -2855,7 +2861,7 @@
         id: "m-" + Date.now() + "-" + newNum,
         title: `Módulo ${newNum}: Título del Módulo`,
         videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        description: "Descripción de los conceptos abordados en este módulo..."
+        description: "Descripción de los conceptos abordados en este módulo...", materialLink: ""
       });
       renderFormModules();
     }
@@ -2897,7 +2903,7 @@
 
               <div class="sm:col-span-2">
                 <label class="block text-[11px] font-semibold text-slate-600 mb-1">Descripción y Material de Estudio del Módulo:</label>
-                <textarea rows="2" onchange="updateModuleField(${i}, 'description', this.value)" placeholder="Anotaciones, objetivos o resumen de este video..." class="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-brand-500">${escapeHtml(mod.description || '')}</textarea>
+                <textarea rows="2" onchange="updateModuleField(${i}, 'description', this.value)" placeholder="Anotaciones, objetivos o resumen de este video..." class="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-brand-500">${escapeHtml(mod.description || '')}</textarea><div class="sm:col-span-2" style="margin-top:0.75rem"><label class="block text-[11px] font-semibold text-slate-600 mb-1">Link de Material de este Módulo (opcional):</label><input type="text" value="${escapeHtml(mod.materialLink || '')}" onchange="updateModuleField(${i}, 'materialLink', this.value)" placeholder="https://drive.google.com/... (opcional, solo para este módulo)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-brand-500"></div>
               </div>
             </div>
           </div>
@@ -2982,7 +2988,7 @@
       const category = document.getElementById('form-course-category').value.trim();
       const duration = document.getElementById('form-course-duration').value.trim();
       const passingScore = parseInt(document.getElementById('form-course-passing').value, 10) || 80;
-      const description = document.getElementById('form-course-desc').value.trim();
+      const description = document.getElementById('form-course-desc').value.trim(); const materialLink = document.getElementById('form-course-material-link').value.trim();
 
       if (!title || !instructor) {
         showToast('El título y el instructor son campos obligatorios.', 'error');
@@ -3014,7 +3020,7 @@
         category: category || 'E-Learning',
         duration: duration || '1h 30m',
         passingScore,
-        description: description || 'Sin descripción.',
+        description: description || 'Sin descripción.', materialLink: materialLink || '',
         thumbnailUrl: tempFormThumbnail || '',
         modules: tempFormModules,
         questions: tempFormQuestions
