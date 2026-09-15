@@ -643,6 +643,7 @@
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <th class="p-4">#</th>
                   <th class="p-4">Nombre Completo del Alumno</th>
                   <th class="p-4">Usuario / Email Asignado</th>
                   <th class="p-4">Contraseña Asignada</th>
@@ -1670,12 +1671,14 @@
       db.collection('courses').onSnapshot(snap => {
         coursesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         dbReady = true;
+        backfillCourseOrderIfNeeded();
         afterDataChange();
       }, err => showToast('Error al sincronizar cursos: ' + err.message, 'error'));
 
       db.collection('students').onSnapshot(snap => {
         studentsDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         dbReady = true;
+        backfillStudentNumbersIfNeeded();
         afterDataChange();
       }, err => showToast('Error al sincronizar alumnos: ' + err.message, 'error'));
 
@@ -1765,6 +1768,120 @@
       return pass;
     }
 
+    // ==================== ORDEN MANUAL DE CURSOS ====================
+    // Devuelve los cursos ordenados segun orderIndex (el que tenga admin definido
+    // con las flechas de subir/bajar); los que aun no tengan orderIndex quedan
+    // al final, en su orden original, hasta que se les asigne uno.
+    function getOrderedCourses() {
+      return [...coursesData].sort((a, b) => {
+        const ao = typeof a.orderIndex === 'number' ? a.orderIndex : Infinity;
+        const bo = typeof b.orderIndex === 'number' ? b.orderIndex : Infinity;
+        return ao - bo;
+      });
+    }
+
+    // Los cursos creados antes de este cambio no tienen orderIndex. La primera
+    // vez que carga la lista, se les asigna uno segun el orden en que ya
+    // aparecian, para no alterar el orden actual y dejar la lista lista para
+    // reordenarse con las flechas.
+    let courseOrderBackfillDone = false;
+    async function backfillCourseOrderIfNeeded() {
+      if (courseOrderBackfillDone) return;
+      const missing = coursesData.filter(c => typeof c.orderIndex !== 'number');
+      if (missing.length === 0) { courseOrderBackfillDone = true; return; }
+
+      courseOrderBackfillDone = true;
+      try {
+        let nextIndex = coursesData.reduce((max, c) => Math.max(max, typeof c.orderIndex === 'number' ? c.orderIndex : -1), -1) + 1;
+        const batch = db.batch();
+        missing.forEach(c => {
+          batch.update(db.collection('courses').doc(c.id), { orderIndex: nextIndex });
+          nextIndex++;
+        });
+        await batch.commit();
+      } catch (err) {
+        console.error('No se pudo asignar orden a cursos existentes:', err);
+        courseOrderBackfillDone = false;
+      }
+    }
+
+    // Intercambia el orderIndex del curso con el de su vecino (arriba o abajo)
+    // en la lista ya ordenada, para moverlo un lugar en esa direccion.
+    async function moveCourse(courseId, direction) {
+      const ordered = getOrderedCourses();
+      const idx = ordered.findIndex(c => c.id === courseId);
+      if (idx === -1) return;
+
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= ordered.length) return;
+
+      const courseA = ordered[idx];
+      const courseB = ordered[swapIdx];
+      const orderA = typeof courseA.orderIndex === 'number' ? courseA.orderIndex : idx;
+      const orderB = typeof courseB.orderIndex === 'number' ? courseB.orderIndex : swapIdx;
+
+      try {
+        const batch = db.batch();
+        batch.update(db.collection('courses').doc(courseA.id), { orderIndex: orderB });
+        batch.update(db.collection('courses').doc(courseB.id), { orderIndex: orderA });
+        await batch.commit();
+      } catch (err) {
+        showToast('No se pudo cambiar el orden del curso: ' + err.message, 'error');
+      }
+    }
+
+    // ==================== NUMERO CONSECUTIVO DE ALUMNOS ====================
+    // Asigna a cada alumno nuevo (auto-registro o alta manual) un numero
+    // consecutivo unico, usando un contador en Firestore (transaccion atomica
+    // para evitar duplicados si dos altas ocurren al mismo tiempo).
+    async function getNextStudentNumber() {
+      const counterRef = db.collection('meta').doc('studentCounter');
+      const fallbackBase = studentsDB.reduce((max, s) => Math.max(max, s.studentNumber || 0), 0);
+      try {
+        return await db.runTransaction(async (tx) => {
+          const counterSnap = await tx.get(counterRef);
+          const current = (counterSnap.exists && typeof counterSnap.data().value === 'number')
+            ? counterSnap.data().value
+            : fallbackBase;
+          const next = current + 1;
+          tx.set(counterRef, { value: next }, { merge: true });
+          return next;
+        });
+      } catch (err) {
+        console.error('Error asignando número consecutivo:', err);
+        return fallbackBase + 1;
+      }
+    }
+
+    // Los alumnos dados de alta antes de este cambio no tienen numero
+    // consecutivo. La primera vez que carga la lista, se les asigna uno
+    // en orden de fecha de alta (el mas antiguo = numero mas bajo), para que
+    // toda la lista quede ordenada desde el inicio.
+    let studentNumberBackfillDone = false;
+    async function backfillStudentNumbersIfNeeded() {
+      if (studentNumberBackfillDone) return;
+      const missing = studentsDB.filter(s => typeof s.studentNumber !== 'number');
+      if (missing.length === 0) { studentNumberBackfillDone = true; return; }
+
+      studentNumberBackfillDone = true;
+      try {
+        const ordered = [...missing].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+        let nextNumber = studentsDB.reduce((max, s) => Math.max(max, s.studentNumber || 0), 0) + 1;
+        const batch = db.batch();
+        ordered.forEach(s => {
+          batch.update(db.collection('students').doc(s.id), { studentNumber: nextNumber });
+          nextNumber++;
+        });
+        await batch.commit();
+
+        const counterRef = db.collection('meta').doc('studentCounter');
+        await counterRef.set({ value: nextNumber - 1 }, { merge: true });
+      } catch (err) {
+        console.error('No se pudo asignar número consecutivo a alumnos existentes:', err);
+        studentNumberBackfillDone = false;
+      }
+    }
+
     // ==================== AUTO-REGISTRO PUBLICO DE PARTICIPANTES ====================
     function openSelfRegisterModal() {
       document.getElementById('selfreg-form-name').value = '';
@@ -1815,12 +1932,14 @@
         }
 
         const password = generateRandomPassword();
+        const studentNumber = await getNextStudentNumber();
 
         await db.collection('students').add({
           name,
           username: email,
           password,
           selfRegistered: true,
+          studentNumber,
           createdAt: new Date().toISOString()
         });
 
@@ -2069,7 +2188,7 @@
         return;
       }
 
-      container.innerHTML = coursesData.map(course => {
+      container.innerHTML = getOrderedCourses().map(course => {
         const enrollment = enrollmentsDB.find(e => e.studentId === currentUser.id && e.courseId === course.id);
         const moduleCount = course.modules ? course.modules.length : 0;
         
@@ -2179,6 +2298,7 @@
           courseId: course.id,
           status: 'pending',
           requestDate: new Date().toLocaleDateString('es-ES'),
+          requestedAt: new Date().toISOString(),
           completedModules: [],
           examScore: null,
           passed: false,
@@ -2637,7 +2757,9 @@
         return;
       }
 
-      tbody.innerHTML = coursesData.map(c => {
+      const ordered = getOrderedCourses();
+
+      tbody.innerHTML = ordered.map((c, idx) => {
         const modCount = c.modules ? c.modules.length : 0;
         const qCount = c.questions ? c.questions.length : 0;
 
@@ -2648,7 +2770,15 @@
         return `
           <tr class="hover:bg-slate-50/80 transition border-b border-slate-100">
             <td class="p-4">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <div class="flex flex-col -space-y-1 mr-1">
+                  <button onclick="moveCourse('${c.id}', 'up')" ${idx === 0 ? 'disabled' : ''} class="px-1 text-slate-400 hover:text-brand-600 disabled:opacity-20 disabled:pointer-events-none transition" title="Subir">
+                    <i class="fa-solid fa-caret-up"></i>
+                  </button>
+                  <button onclick="moveCourse('${c.id}', 'down')" ${idx === ordered.length - 1 ? 'disabled' : ''} class="px-1 text-slate-400 hover:text-brand-600 disabled:opacity-20 disabled:pointer-events-none transition" title="Bajar">
+                    <i class="fa-solid fa-caret-down"></i>
+                  </button>
+                </div>
                 ${thumbCell}
                 <div>
                   <div class="font-bold text-slate-800 text-xs">${c.title}</div>
@@ -2685,7 +2815,17 @@
         return;
       }
 
-      tbody.innerHTML = enrollmentsDB.map(enr => {
+      // Las solicitudes mas recientes primero. Las que ya tengan marca de tiempo
+      // (requestedAt) se ordenan por ella; las anteriores a este cambio, que no
+      // la tienen, se dejan despues, en su orden original.
+      const sortedEnrollments = [...enrollmentsDB].sort((a, b) => {
+        if (a.requestedAt && b.requestedAt) return b.requestedAt.localeCompare(a.requestedAt);
+        if (a.requestedAt) return -1;
+        if (b.requestedAt) return 1;
+        return 0;
+      });
+
+      tbody.innerHTML = sortedEnrollments.map(enr => {
         const course = coursesData.find(c => c.id === enr.courseId);
         const courseTitle = course ? course.title : 'Curso no encontrado';
 
@@ -2745,16 +2885,30 @@
     function renderAdminStudentsTable() {
       const tbody = document.getElementById('admin-students-tbody');
       if (studentsDB.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">No hay alumnos dados de alta aún.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No hay alumnos dados de alta aún.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = studentsDB.map(st => {
+      // Los mas recientes primero: por numero consecutivo (mayor = mas nuevo) y,
+      // para alumnos antiguos que aun no tengan numero asignado, por fecha de alta.
+      const sortedStudents = [...studentsDB].sort((a, b) => {
+        if (typeof a.studentNumber === 'number' && typeof b.studentNumber === 'number') {
+          return b.studentNumber - a.studentNumber;
+        }
+        if (typeof a.studentNumber === 'number') return -1;
+        if (typeof b.studentNumber === 'number') return 1;
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+
+      tbody.innerHTML = sortedStudents.map(st => {
         const studentEnrollments = enrollmentsDB.filter(e => e.studentId === st.id);
         const authorizedCount = studentEnrollments.filter(e => e.status === 'approved').length;
 
         return `
           <tr class="hover:bg-slate-50/80 transition border-b border-slate-100">
+            <td class="p-4 font-mono font-bold text-slate-400 text-xs">
+              ${typeof st.studentNumber === 'number' ? '#' + st.studentNumber : '-'}
+            </td>
             <td class="p-4 font-bold text-slate-800 text-xs">
               <i class="fa-solid fa-user-graduate text-brand-600 mr-1.5"></i> ${st.name}
             </td>
@@ -2905,11 +3059,13 @@
             return;
           }
 
+          const studentNumber = await getNextStudentNumber();
           await db.collection('students').add({
             name,
             username,
             password,
             selfRegistered: false,
+            studentNumber,
             createdAt: new Date().toISOString()
           });
           showToast(`Alumno "${name}" registrado con contraseña asignada.`, 'success');
@@ -3393,7 +3549,8 @@
           await db.collection('courses').doc(editingCourseId).update(courseData);
           showToast('¡Curso y módulos actualizados correctamente!', 'success');
         } else {
-          await db.collection('courses').add(courseData);
+          const orderIndex = coursesData.reduce((max, c) => Math.max(max, typeof c.orderIndex === 'number' ? c.orderIndex : -1), -1) + 1;
+          await db.collection('courses').add({ ...courseData, orderIndex });
           showToast('¡Nuevo curso publicado con sus módulos!', 'success');
         }
         closeCourseModal();
