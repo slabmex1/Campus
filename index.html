@@ -2301,14 +2301,14 @@
       }).join('');
     }
 
-    async function requestEnrollment(courseId) {
+    async function alertarNuevaInscripcion(nombreAlumno, nombreCurso) { const telefono = '5215573446150'; const apikey = '9610624'; const mensaje = encodeURIComponent('Nueva inscripcion por autorizar: ' + nombreAlumno + ' - Curso: ' + nombreCurso); fetch('https://api.callmebot.com/whatsapp.php?phone=' + telefono + '&text=' + mensaje + '&apikey=' + apikey).catch(function(err){ console.error('Error WhatsApp:', err); }); } async function requestEnrollment(courseId) {
       if (!currentUser || currentUser.role !== 'student') return;
 
       const course = coursesData.find(c => c.id === courseId);
       if (!course) return;
 
       try {
-        await db.collection('enrollments').add({
+        alertarNuevaInscripcion(currentUser.name, course.title); await db.collection('enrollments').add({
           studentId: currentUser.id,
           studentUsername: currentUser.username,
           studentName: currentUser.name,
