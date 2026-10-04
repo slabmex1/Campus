@@ -18,6 +18,7 @@
   <!-- Firebase (Base de datos en la nube: Firestore) -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 
   <!-- EmailJS (Envío automático de correos con usuario y contraseña) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -560,6 +561,9 @@
           <p class="text-xs text-slate-500">Configura cursos con módulos ilimitados, autoriza accesos de alumnos y da seguimiento a sus constancias.</p>
         </div>
         <div class="flex items-center gap-3">
+          <button id="btn-migrate-auth" onclick="migrateAccountsToAuth()" class="px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs rounded-xl transition flex items-center gap-2" title="Migración única: crea las cuentas de acceso seguro de alumnos y colaboradores existentes">
+            <i class="fa-solid fa-shield-halved"></i> Activar acceso seguro
+          </button>
           <button onclick="openCreateCourseModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/25 transition flex items-center gap-2">
             <i class="fa-solid fa-circle-plus"></i> Crear Nuevo Curso
           </button>
@@ -1454,10 +1458,15 @@
 
     let firebaseReady = false;
     let db = null;
+    let auth = null;
     try {
       if (firebaseConfig.apiKey.indexOf('REEMPLAZA') === -1) {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
+        auth = firebase.auth();
+        // La sesión vive solo mientras la pestaña está abierta (igual que antes:
+        // al recargar la página se vuelve a pedir usuario y contraseña).
+        auth.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => {});
         firebaseReady = true;
       }
     } catch (err) {
@@ -1485,11 +1494,121 @@
     }
 
     // Credenciales del Administrador Principal (acceso fijo, no se autoregistra)
+    // La contraseña del administrador YA NO vive en este archivo: se administra en
+    // Firebase Console -> Authentication (usuario admin@staff.academiasst.com.mx).
     const ADMIN_CREDENTIALS = {
       username: 'admin',
-      password: 'qwerty123',
       name: 'Direccion Academica Admin'
     };
+
+    // ==================== ACCESO SEGURO (FIREBASE AUTHENTICATION) ====================
+    // Cada alumno y colaborador tiene una cuenta en Firebase Authentication. El usuario
+    // que escriben en el login se convierte en un correo interno con estas reglas:
+    //  - Alumno con correo (ana@gmail.com)      -> ana@gmail.com
+    //  - Alumno con usuario simple (carlos)     -> carlos@alumno.academiasst.com.mx
+    //  - Colaborador / admin (lourdes, admin)   -> lourdes@staff.academiasst.com.mx
+    const AUTH_STUDENT_DOMAIN = 'alumno.academiasst.com.mx';
+    const AUTH_STAFF_DOMAIN = 'staff.academiasst.com.mx';
+
+    function normalizeAuthLocalPart(str) {
+      return String(str || '').trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9._-]/g, '-');
+    }
+    function studentAuthEmail(username) {
+      const u = String(username || '').trim().toLowerCase();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u)) return u;
+      return normalizeAuthLocalPart(u) + '@' + AUTH_STUDENT_DOMAIN;
+    }
+    function staffAuthEmail(username) {
+      return normalizeAuthLocalPart(String(username || '').replace('@', '.at.')) + '@' + AUTH_STAFF_DOMAIN;
+    }
+    const ADMIN_AUTH_EMAIL = staffAuthEmail('admin'); // admin@staff.academiasst.com.mx
+
+    // Segunda instancia de Firebase: permite que el administrador cree, cambie o
+    // elimine cuentas de otras personas SIN cerrar su propia sesión.
+    let secondaryAuth = null;
+    function getSecondaryAuth() {
+      if (!secondaryAuth) {
+        const app = firebase.initializeApp(firebaseConfig, 'gestion-cuentas');
+        secondaryAuth = app.auth();
+        secondaryAuth.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => {});
+      }
+      return secondaryAuth;
+    }
+
+    // Crea la cuenta de acceso (o la reutiliza si ya existía con esa misma contraseña). Devuelve su uid.
+    async function provisionAuthUser(email, password) {
+      const a = getSecondaryAuth();
+      try {
+        const cred = await a.createUserWithEmailAndPassword(email, password);
+        return cred.user.uid;
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          try {
+            const cred = await a.signInWithEmailAndPassword(email, password);
+            return cred.user.uid;
+          } catch (e2) {
+            throw new Error('Ya existe una cuenta de acceso con ese usuario y otra contraseña.');
+          }
+        }
+        throw err;
+      } finally {
+        try { await a.signOut(); } catch (e) {}
+      }
+    }
+
+    async function deleteAuthUser(email, password) {
+      const a = getSecondaryAuth();
+      try {
+        const cred = await a.signInWithEmailAndPassword(email, password);
+        await cred.user.delete();
+      } catch (err) {
+        console.warn('No se pudo eliminar la cuenta de acceso de ' + email + ':', err.code || err.message);
+      } finally {
+        try { await a.signOut(); } catch (e) {}
+      }
+    }
+
+    // Cambia la contraseña; si la cuenta no existía o no coincide, la crea de nuevo. Devuelve el uid.
+    async function changeAuthPassword(email, oldPassword, newPassword) {
+      const a = getSecondaryAuth();
+      try {
+        const cred = await a.signInWithEmailAndPassword(email, oldPassword);
+        await cred.user.updatePassword(newPassword);
+        return cred.user.uid;
+      } catch (err) {
+        try { await a.signOut(); } catch (e) {}
+        return await provisionAuthUser(email, newPassword);
+      } finally {
+        try { await a.signOut(); } catch (e) {}
+      }
+    }
+
+    function authErrorMessage(err) {
+      const code = (err && err.code) || '';
+      if (['auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'].includes(code)) {
+        return 'Usuario o contraseña incorrectos.';
+      }
+      if (code === 'auth/too-many-requests') return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
+      if (code === 'auth/network-request-failed') return 'Sin conexión. Revisa tu internet e intenta de nuevo.';
+      if (code === 'auth/weak-password') return 'La contraseña debe tener al menos 6 caracteres.';
+      if (code === 'auth/operation-not-allowed') return 'El acceso con correo y contraseña no está activado en Firebase Authentication.';
+      return (err && err.message) || 'Error desconocido.';
+    }
+
+    async function relinkStudentUid(studentId, uid) {
+      const refs = [];
+      const enrSnap = await db.collection('enrollments').where('studentId', '==', studentId).get();
+      enrSnap.forEach(d => { if (d.data().studentUid !== uid) refs.push(d.ref); });
+      const sbSnap = await db.collection('studentBadges').where('studentId', '==', studentId).get();
+      sbSnap.forEach(d => { if (d.data().studentUid !== uid) refs.push(d.ref); });
+      for (let i = 0; i < refs.length; i += 400) {
+        const batch = db.batch();
+        refs.slice(i, i + 400).forEach(r => batch.update(r, { studentUid: uid }));
+        await batch.commit();
+      }
+    }
 
     // Estas 3 listas son ahora una CACHE LOCAL sincronizada en tiempo real con Firestore
     // (colecciones 'students', 'courses', 'enrollments'). Nunca se editan directamente:
@@ -1709,12 +1828,9 @@
         return;
       }
 
-      seedDatabaseIfEmpty()
-        .then(initFirestoreSync)
-        .catch(err => {
-          console.error(err);
-          showToast('No se pudo conectar con la base de datos: ' + err.message, 'error');
-        });
+      // Los datos ya no se cargan antes de iniciar sesión: solo la verificación
+      // pública de insignias (?verify=FOLIO) funciona sin cuenta.
+      handleVerifyUrlParamIfNeeded();
     });
 
     // ==================== SINCRONIZACION EN TIEMPO REAL CON FIRESTORE ====================
@@ -1742,48 +1858,54 @@
       }
     }
 
+    let firestoreUnsubscribers = [];
+    function stopFirestoreSync() {
+      firestoreUnsubscribers.forEach(unsub => { try { unsub(); } catch (e) {} });
+      firestoreUnsubscribers = [];
+    }
+
+    function listenCollection(query, onData, label) {
+      const unsub = query.onSnapshot(
+        snap => onData(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        err => showToast('Error al sincronizar ' + label + ': ' + err.message, 'error')
+      );
+      firestoreUnsubscribers.push(unsub);
+    }
+
+    // Se llama al iniciar sesión. Cada rol solo escucha lo que tiene permitido ver:
+    // el personal ve todo; cada alumno solo sus propios registros.
     function initFirestoreSync() {
-      db.collection('courses').onSnapshot(snap => {
-        coursesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      stopFirestoreSync();
+      if (!currentUser) return;
+      const staff = isStaffUser(currentUser);
+
+      listenCollection(db.collection('courses'), list => {
+        coursesData = list;
         dbReady = true;
-        backfillCourseOrderIfNeeded();
+        if (staff) backfillCourseOrderIfNeeded();
         afterDataChange();
-      }, err => showToast('Error al sincronizar cursos: ' + err.message, 'error'));
+      }, 'cursos');
 
-      db.collection('students').onSnapshot(snap => {
-        studentsDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        dbReady = true;
-        backfillStudentNumbersIfNeeded();
-        afterDataChange();
-      }, err => showToast('Error al sincronizar alumnos: ' + err.message, 'error'));
+      listenCollection(db.collection('badges'), list => { badgesDB = list; afterDataChange(); }, 'insignias');
+      listenCollection(db.collection('badgeRoutes'), list => { badgeRoutesDB = list; afterDataChange(); }, 'rutas de aprendizaje');
 
-      db.collection('enrollments').onSnapshot(snap => {
-        enrollmentsDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        dbReady = true;
-        afterDataChange();
-      }, err => showToast('Error al sincronizar inscripciones: ' + err.message, 'error'));
-
-      db.collection('staff').onSnapshot(snap => {
-        staffDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        dbReady = true;
-        afterDataChange();
-      }, err => showToast('Error al sincronizar colaboradores: ' + err.message, 'error'));
-
-      db.collection('badges').onSnapshot(snap => {
-        badgesDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        afterDataChange();
-      }, err => showToast('Error al sincronizar insignias: ' + err.message, 'error'));
-
-      db.collection('badgeRoutes').onSnapshot(snap => {
-        badgeRoutesDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        afterDataChange();
-      }, err => showToast('Error al sincronizar rutas de aprendizaje: ' + err.message, 'error'));
-
-      db.collection('studentBadges').onSnapshot(snap => {
-        studentBadgesDB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        afterDataChange();
-        handleVerifyUrlParamIfNeeded();
-      }, err => showToast('Error al sincronizar insignias otorgadas: ' + err.message, 'error'));
+      if (staff) {
+        listenCollection(db.collection('students'), list => {
+          studentsDB = list;
+          backfillStudentNumbersIfNeeded();
+          afterDataChange();
+        }, 'alumnos');
+        listenCollection(db.collection('enrollments'), list => { enrollmentsDB = list; afterDataChange(); }, 'inscripciones');
+        listenCollection(db.collection('studentBadges'), list => { studentBadgesDB = list; afterDataChange(); }, 'insignias otorgadas');
+        if (isPrimaryAdmin(currentUser)) {
+          listenCollection(db.collection('staff'), list => { staffDB = list; afterDataChange(); }, 'colaboradores');
+        }
+      } else {
+        const uid = currentUser.uid;
+        listenCollection(db.collection('students').where('uid', '==', uid), list => { studentsDB = list; afterDataChange(); }, 'tu perfil');
+        listenCollection(db.collection('enrollments').where('studentUid', '==', uid), list => { enrollmentsDB = list; afterDataChange(); }, 'tus inscripciones');
+        listenCollection(db.collection('studentBadges').where('studentUid', '==', uid), list => { studentBadgesDB = list; afterDataChange(); }, 'tus insignias');
+      }
     }
 
     // Se ejecuta cada vez que llega una actualizacion en vivo desde Firestore,
@@ -1820,17 +1942,23 @@
 
     // Si la página se abrió con ?verify=FOLIO en la URL, muestra la ficha pública
     // de esa insignia sin necesidad de iniciar sesión (URL pública de verificación).
-    function handleVerifyUrlParamIfNeeded() {
-      if (verifyParamHandled) return;
+    async function handleVerifyUrlParamIfNeeded() {
+      if (verifyParamHandled || !firebaseReady) return;
       const params = new URLSearchParams(window.location.search);
       const folio = params.get('verify');
       if (!folio) return;
+      verifyParamHandled = true;
 
-      const award = studentBadgesDB.find(sb => sb.folio === folio);
-      if (award) {
-        verifyParamHandled = true;
-        renderPublicBadgeVerification(award);
-        navigateTo('badge-verify');
+      try {
+        const doc = await db.collection('badgeVerifications').doc(folio).get();
+        if (doc.exists) {
+          renderPublicBadgeVerification({ folio, ...doc.data() });
+          navigateTo('badge-verify');
+        } else {
+          showToast('No se encontró ninguna insignia con el folio ' + folio + '.', 'error');
+        }
+      } catch (err) {
+        showToast('No se pudo verificar la insignia: ' + err.message, 'error');
       }
     }
 
@@ -1957,6 +2085,94 @@
       }
     }
 
+    // ==================== MIGRACION UNICA A ACCESO SEGURO ====================
+    // Crea en Firebase Authentication las cuentas de los alumnos y colaboradores que ya
+    // existían (con la misma contraseña que tienen hoy) y las vincula a sus registros.
+    // Se puede ejecutar varias veces sin problema: lo ya migrado se omite.
+    async function migrateAccountsToAuth() {
+      if (!isPrimaryAdmin(currentUser)) {
+        showToast('Solo la Dirección Académica puede ejecutar la migración.', 'error');
+        return;
+      }
+      if (!confirm('Se crearán las cuentas de acceso seguro para todos los alumnos y colaboradores existentes, con su misma contraseña actual. ¿Continuar?')) return;
+
+      const btn = document.getElementById('btn-migrate-auth');
+      const setBtn = (t) => { if (btn) btn.innerHTML = t; };
+      if (btn) btn.disabled = true;
+      const problems = [];
+      let migrated = 0, already = 0;
+
+      try {
+        const studentsSnap = await db.collection('students').get();
+        const students = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        let i = 0;
+        for (const st of students) {
+          i++;
+          setBtn(`<i class="fa-solid fa-circle-notch fa-spin"></i> Alumnos ${i}/${students.length}...`);
+          let uid = st.uid;
+          if (!uid) {
+            if (!st.username || !st.password || st.password.length < 6) {
+              problems.push(`Alumno "${st.name}": contraseña de menos de 6 caracteres (cámbiala desde "Asignar Usuarios y Contraseñas").`);
+              continue;
+            }
+            try {
+              uid = await provisionAuthUser(studentAuthEmail(st.username), st.password);
+              await db.collection('students').doc(st.id).update({ uid });
+              migrated++;
+            } catch (err) {
+              problems.push(`Alumno "${st.name}" (${st.username}): ${authErrorMessage(err)}`);
+              continue;
+            }
+          } else {
+            already++;
+          }
+          await relinkStudentUid(st.id, uid);
+        }
+
+        const staffSnap = await db.collection('staff').get();
+        const staffList = staffSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        i = 0;
+        for (const sm of staffList) {
+          i++;
+          setBtn(`<i class="fa-solid fa-circle-notch fa-spin"></i> Colaboradores ${i}/${staffList.length}...`);
+          let uid = sm.uid;
+          if (!uid) {
+            if (!sm.username || !sm.password || sm.password.length < 6) {
+              problems.push(`Colaborador "${sm.name}": contraseña de menos de 6 caracteres (cámbiala desde "Colaboradores").`);
+              continue;
+            }
+            try {
+              uid = await provisionAuthUser(staffAuthEmail(sm.username), sm.password);
+              await db.collection('staff').doc(sm.id).update({ uid });
+              migrated++;
+            } catch (err) {
+              problems.push(`Colaborador "${sm.name}" (${sm.username}): ${authErrorMessage(err)}`);
+              continue;
+            }
+          } else {
+            already++;
+          }
+          await db.collection('staffRoles').doc(uid).set({ staffId: sm.id, name: sm.name, username: sm.username, role: 'coordinator' });
+        }
+
+        setBtn('<i class="fa-solid fa-circle-notch fa-spin"></i> Verificaciones públicas...');
+        const sbSnap = await db.collection('studentBadges').get();
+        for (const d of sbSnap.docs) {
+          const sb = { id: d.id, ...d.data() };
+          if (sb.folio) await writeBadgeVerification(sb);
+        }
+
+        const summary = `Migración terminada.\n\nCuentas creadas: ${migrated}\nYa estaban migradas: ${already}\n` +
+          (problems.length ? `\nPendientes por revisar (${problems.length}):\n- ` + problems.join('\n- ') : '\nSin pendientes. Ya puedes publicar las nuevas reglas de Firestore.');
+        alert(summary);
+      } catch (err) {
+        alert('La migración se detuvo por un error: ' + (err.message || err) + '\n\nPuedes volver a ejecutarla; lo ya migrado se omite.');
+      } finally {
+        if (btn) btn.disabled = false;
+        setBtn('<i class="fa-solid fa-shield-halved"></i> Activar acceso seguro');
+      }
+    }
+
     // ==================== AUTO-REGISTRO PUBLICO DE PARTICIPANTES ====================
     function openSelfRegisterModal() {
       document.getElementById('selfreg-form-name').value = '';
@@ -1999,17 +2215,23 @@
       submitBtn.classList.add('opacity-60', 'pointer-events-none');
 
       try {
-        const dupSnap = await db.collection('students').where('username', '==', email).get();
-        if (!dupSnap.empty) {
-          errorText.textContent = 'Ese correo ya tiene una cuenta registrada. Inicia sesion o recupera tu contrasena con el administrador.';
-          errorMsg.classList.remove('hidden');
-          return;
+        const password = generateRandomPassword();
+        let cred;
+        try {
+          cred = await auth.createUserWithEmailAndPassword(studentAuthEmail(email), password);
+        } catch (authErr) {
+          if (authErr.code === 'auth/email-already-in-use') {
+            errorText.textContent = 'Ese correo ya tiene una cuenta registrada. Inicia sesion o recupera tu contrasena con el administrador.';
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+          throw new Error(authErrorMessage(authErr));
         }
 
-        const password = generateRandomPassword();
         const studentNumber = await getNextStudentNumber();
 
         await db.collection('students').add({
+          uid: cred.user.uid,
           name,
           username: email,
           password,
@@ -2017,6 +2239,8 @@
           studentNumber,
           createdAt: new Date().toISOString()
         });
+
+        await auth.signOut();
 
         await sendCredentialsEmail({ name, email, username: email, password });
 
@@ -2094,7 +2318,7 @@
       if (type === 'admin') {
         toggleLoginTab('admin');
         document.getElementById('login-username').value = ADMIN_CREDENTIALS.username;
-        document.getElementById('login-password').value = ADMIN_CREDENTIALS.password;
+        document.getElementById('login-password').value = '';
       } else {
         toggleLoginTab('student');
         document.getElementById('login-username').value = "carlos";
@@ -2103,88 +2327,103 @@
       showToast('Credenciales demo insertadas. Haz clic en "Iniciar Sesión".', 'info');
     }
 
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       const username = document.getElementById('login-username').value.trim();
       const pass = document.getElementById('login-password').value.trim();
       const errorMsg = document.getElementById('login-error-msg');
       const errorText = document.getElementById('login-error-text');
+      const submitBtn = e.target.querySelector('button[type="submit"]');
 
-      if (activeLoginTab === 'admin') {
-        if (username === ADMIN_CREDENTIALS.username && pass === ADMIN_CREDENTIALS.password) {
-          currentUser = {
-            role: 'admin',
-            username: ADMIN_CREDENTIALS.username,
-            name: ADMIN_CREDENTIALS.name,
-            id: 'admin'
-          };
+      const showError = (msg) => { errorText.textContent = msg; errorMsg.classList.remove('hidden'); };
+      errorMsg.classList.add('hidden');
+
+      if (!firebaseReady || !auth) {
+        showError('La base de datos aun no esta configurada. Contacta al administrador.');
+        return;
+      }
+      if (!username || !pass) {
+        showError('Escribe tu usuario y contraseña.');
+        return;
+      }
+
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('opacity-60'); }
+      try {
+        if (activeLoginTab === 'admin') {
+          const email = staffAuthEmail(username);
+          let cred;
+          try {
+            cred = await auth.signInWithEmailAndPassword(email, pass);
+          } catch (err) {
+            showError(err.code && err.code.startsWith('auth/') && !['auth/too-many-requests', 'auth/network-request-failed', 'auth/operation-not-allowed'].includes(err.code)
+              ? 'Usuario o contraseña de Administrador incorrectos.' : authErrorMessage(err));
+            return;
+          }
+
+          if (email === ADMIN_AUTH_EMAIL) {
+            currentUser = { role: 'admin', username: ADMIN_CREDENTIALS.username, name: ADMIN_CREDENTIALS.name, id: 'admin', uid: cred.user.uid };
+          } else {
+            const roleDoc = await db.collection('staffRoles').doc(cred.user.uid).get();
+            if (!roleDoc.exists) {
+              await auth.signOut();
+              showError('Esta cuenta no tiene acceso al Panel de Administración.');
+              return;
+            }
+            const r = roleDoc.data();
+            currentUser = { role: 'coordinator', username: r.username || username, name: r.name || username, id: r.staffId || cred.user.uid, uid: cred.user.uid };
+          }
+
+          initFirestoreSync();
           updateHeaderSessionUI();
           navigateTo('admin-dashboard');
           showToast(`¡Bienvenido al Panel de Administración, ${currentUser.name}!`, 'success');
           updateAdminDashboardStats();
           renderAdminAll();
-          errorMsg.classList.add('hidden');
-          return;
-        }
-
-        const staffMember = staffDB.find(s =>
-          s.username.toLowerCase() === username.toLowerCase() && s.password === pass
-        );
-
-        if (staffMember) {
-          currentUser = {
-            role: 'coordinator',
-            username: staffMember.username,
-            name: staffMember.name,
-            id: staffMember.id
-          };
-          updateHeaderSessionUI();
-          navigateTo('admin-dashboard');
-          showToast(`¡Bienvenido, ${currentUser.name}!`, 'success');
-          updateAdminDashboardStats();
-          renderAdminAll();
-          errorMsg.classList.add('hidden');
         } else {
-          errorText.textContent = "Usuario o contraseña de Administrador incorrectos.";
-          errorMsg.classList.remove('hidden');
-        }
-      } else {
-        if (!dbReady) {
-          errorText.textContent = "La base de datos aun se esta cargando, espera un momento e intenta de nuevo.";
-          errorMsg.classList.remove('hidden');
-          return;
-        }
+          let cred;
+          try {
+            cred = await auth.signInWithEmailAndPassword(studentAuthEmail(username), pass);
+          } catch (err) {
+            showError(['auth/too-many-requests', 'auth/network-request-failed', 'auth/operation-not-allowed'].includes(err.code)
+              ? authErrorMessage(err) : 'Credenciales de alumno no válidas o no registradas.');
+            return;
+          }
 
-        const student = studentsDB.find(s =>
-          (s.username.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase()) &&
-          s.password === pass
-        );
+          const snap = await db.collection('students').where('uid', '==', cred.user.uid).limit(1).get();
+          if (snap.empty) {
+            await auth.signOut();
+            showError('Tu cuenta no está vinculada a un alumno. Contacta al administrador.');
+            return;
+          }
+          const doc = snap.docs[0];
+          const student = { id: doc.id, ...doc.data() };
+          currentUser = { role: 'student', username: student.username, name: student.name, id: student.id, uid: cred.user.uid };
+          studentsDB = [student];
 
-        if (student) {
-          currentUser = {
-            role: 'student',
-            username: student.username,
-            name: student.name,
-            id: student.id
-          };
+          initFirestoreSync();
           updateHeaderSessionUI();
           document.getElementById('student-welcome-name').textContent = student.name;
           navigateTo('student-catalog');
           renderStudentCatalog();
           showToast(`¡Bienvenido, ${student.name}!`, 'success');
-          errorMsg.classList.add('hidden');
-        } else {
-          errorText.textContent = "Credenciales de alumno no válidas o no registradas.";
-          errorMsg.classList.remove('hidden');
         }
+      } catch (err) {
+        console.error(err);
+        showError('No se pudo iniciar sesión: ' + (err.message || err));
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('opacity-60'); }
       }
     }
 
     function handleLogout() {
+      stopFirestoreSync();
+      if (auth) auth.signOut().catch(() => {});
       currentUser = null;
       currentCourseId = null;
       isCoursePreview = false;
       previewEnrollment = null;
+      studentsDB = []; enrollmentsDB = []; studentBadgesDB = []; staffDB = []; coursesData = [];
+      dbReady = false;
       updateHeaderSessionUI();
       navigateTo('login');
       document.getElementById('login-username').value = '';
@@ -2211,6 +2450,7 @@
       const userBadge = document.getElementById('header-user-badge');
       const guestBadge = document.getElementById('header-guest-badge');
 
+      updateMigrateButtonVisibility();
       if (currentUser) {
         userBadge.classList.remove('hidden');
         userBadge.classList.add('flex');
@@ -2370,6 +2610,7 @@
       try {
         alertarNuevaInscripcion(currentUser.name, course.title); await db.collection('enrollments').add({
           studentId: currentUser.id,
+          studentUid: currentUser.uid,
           studentUsername: currentUser.username,
           studentName: currentUser.name,
           courseId: course.id,
@@ -2812,6 +3053,11 @@
     function classroomGoBack() {
       if (isCoursePreview) exitCoursePreview();
       else navigateTo('student-catalog');
+    }
+
+    function updateMigrateButtonVisibility() {
+      const b = document.getElementById('btn-migrate-auth');
+      if (b) b.classList.toggle('hidden', !isPrimaryAdmin(currentUser));
     }
 
     function applyClassroomPreviewUI() {
@@ -3432,10 +3678,33 @@
         showToast('Completa todos los campos obligatorios.', 'error');
         return;
       }
+      if (password.length < 6) {
+        showToast('La contraseña debe tener al menos 6 caracteres.', 'error');
+        return;
+      }
 
       try {
         if (editingStudentId) {
-          await db.collection('students').doc(editingStudentId).update({ name, username, password });
+          const old = studentsDB.find(s => s.id === editingStudentId) || {};
+          let uid = old.uid || null;
+          const usernameChanged = (old.username || '').toLowerCase() !== username;
+
+          if (usernameChanged) {
+            const dupSnap = await db.collection('students').where('username', '==', username).get();
+            if (dupSnap.docs.some(d => d.id !== editingStudentId)) {
+              showToast('Ese nombre de usuario ya está asignado a otro alumno.', 'error');
+              return;
+            }
+            if (old.username && old.password) await deleteAuthUser(studentAuthEmail(old.username), old.password);
+            uid = await provisionAuthUser(studentAuthEmail(username), password);
+          } else if (!uid) {
+            uid = await provisionAuthUser(studentAuthEmail(username), password);
+          } else if (old.password !== password) {
+            uid = await changeAuthPassword(studentAuthEmail(username), old.password, password);
+          }
+
+          await db.collection('students').doc(editingStudentId).update({ name, username, password, uid });
+          if (uid !== old.uid) await relinkStudentUid(editingStudentId, uid);
           showToast('Credenciales del participante actualizadas.', 'success');
         } else {
           const dupSnap = await db.collection('students').where('username', '==', username).get();
@@ -3444,8 +3713,10 @@
             return;
           }
 
+          const uid = await provisionAuthUser(studentAuthEmail(username), password);
           const studentNumber = await getNextStudentNumber();
           await db.collection('students').add({
+            uid,
             name,
             username,
             password,
@@ -3458,7 +3729,7 @@
 
         closeStudentModal();
       } catch (err) {
-        showToast('No se pudo guardar el alumno: ' + err.message, 'error');
+        showToast('No se pudo guardar el alumno: ' + authErrorMessage(err), 'error');
       }
     }
 
@@ -3466,6 +3737,8 @@
       if (!confirm('¿Eliminar a este alumno y todas sus inscripciones? Esta acción no se puede deshacer.')) return;
 
       try {
+        const st = studentsDB.find(s => s.id === studentId);
+        if (st && st.username && st.password) await deleteAuthUser(studentAuthEmail(st.username), st.password);
         await db.collection('students').doc(studentId).delete();
 
         const enrollSnap = await db.collection('enrollments').where('studentId', '==', studentId).get();
@@ -3577,15 +3850,38 @@
         showToast('Completa todos los campos obligatorios.', 'error');
         return;
       }
-
-      if (username === ADMIN_CREDENTIALS.username) {
+      if (password.length < 6) {
+        showToast('La contraseña debe tener al menos 6 caracteres.', 'error');
+        return;
+      }
+      if (staffAuthEmail(username) === ADMIN_AUTH_EMAIL) {
         showToast('Ese nombre de usuario está reservado para la Dirección Académica.', 'error');
         return;
       }
 
       try {
         if (editingStaffId) {
-          await db.collection('staff').doc(editingStaffId).update({ name, username, password });
+          const old = staffDB.find(s => s.id === editingStaffId) || {};
+          let uid = old.uid || null;
+          const usernameChanged = (old.username || '').toLowerCase() !== username;
+
+          if (usernameChanged) {
+            const dupSnap = await db.collection('staff').where('username', '==', username).get();
+            if (dupSnap.docs.some(d => d.id !== editingStaffId)) {
+              showToast('Ese nombre de usuario ya está asignado a otro colaborador.', 'error');
+              return;
+            }
+            if (old.username && old.password) await deleteAuthUser(staffAuthEmail(old.username), old.password);
+            if (old.uid) await db.collection('staffRoles').doc(old.uid).delete();
+            uid = await provisionAuthUser(staffAuthEmail(username), password);
+          } else if (!uid) {
+            uid = await provisionAuthUser(staffAuthEmail(username), password);
+          } else if (old.password !== password) {
+            uid = await changeAuthPassword(staffAuthEmail(username), old.password, password);
+          }
+
+          await db.collection('staff').doc(editingStaffId).update({ name, username, password, uid });
+          await db.collection('staffRoles').doc(uid).set({ staffId: editingStaffId, name, username, role: 'coordinator' });
           showToast('Credenciales del colaborador actualizadas.', 'success');
         } else {
           const dupSnap = await db.collection('staff').where('username', '==', username).get();
@@ -3594,12 +3890,14 @@
             return;
           }
 
-          await db.collection('staff').add({ name, username, password });
+          const uid = await provisionAuthUser(staffAuthEmail(username), password);
+          const ref = await db.collection('staff').add({ name, username, password, uid });
+          await db.collection('staffRoles').doc(uid).set({ staffId: ref.id, name, username, role: 'coordinator' });
           showToast('¡Colaborador agregado! Ya puede entrar por la pestaña "Administrador" del login.', 'success');
         }
         closeStaffModal();
       } catch (err) {
-        showToast('No se pudo guardar al colaborador: ' + err.message, 'error');
+        showToast('No se pudo guardar al colaborador: ' + authErrorMessage(err), 'error');
       }
     }
 
@@ -3611,6 +3909,9 @@
       if (!confirm('¿Eliminar el acceso de este colaborador? Esta acción no se puede deshacer.')) return;
 
       try {
+        const sm = staffDB.find(s => s.id === staffId);
+        if (sm && sm.username && sm.password) await deleteAuthUser(staffAuthEmail(sm.username), sm.password);
+        if (sm && sm.uid) await db.collection('staffRoles').doc(sm.uid).delete();
         await db.collection('staff').doc(staffId).delete();
         showToast('Colaborador eliminado.', 'info');
       } catch (err) {
@@ -4464,8 +4765,17 @@
         showToast('Ese folio ya está asignado a otra insignia. Usa uno distinto.', 'error');
         return;
       }
+      if (folio.includes('/')) {
+        showToast('El folio no puede contener el carácter "/".', 'error');
+        return;
+      }
       try {
+        const sb = studentBadgesDB.find(x => x.id === studentBadgeId) || {};
         await db.collection('studentBadges').doc(studentBadgeId).update({ folio });
+        await writeBadgeVerification({ ...sb, folio });
+        if (sb.folio && sb.folio !== folio) {
+          await db.collection('badgeVerifications').doc(sb.folio).delete().catch(() => {});
+        }
         showToast('Folio asignado correctamente.', 'success');
       } catch (err) {
         showToast('No se pudo guardar el folio: ' + err.message, 'error');
@@ -4510,6 +4820,23 @@
       return [...titles, ...masked].join(' ');
     }
 
+    // Copia pública (sin datos personales completos) que se consulta en ?verify=FOLIO
+    async function writeBadgeVerification(sb) {
+      if (!sb || !sb.folio) return;
+      const badge = badgesDB.find(b => b.id === sb.badgeId);
+      await db.collection('badgeVerifications').doc(sb.folio).set({
+        folio: sb.folio,
+        badgeId: sb.badgeId || '',
+        badgeName: sb.badgeName || (badge && badge.name) || '',
+        badgeImage: sb.badgeImage || (badge && badge.image) || '',
+        criterio: (badge && badge.criterio) || '',
+        studentName: maskParticipantName(sb.studentName || ''),
+        nameMasked: true,
+        issueDate: sb.issueDate || '',
+        status: sb.status || 'vigente'
+      });
+    }
+
     // ==================== OTORGAMIENTO AUTOMATICO DE INSIGNIAS ====================
     // El folio de verificación NO se genera automáticamente: Cecilia lo asigna
     // manualmente desde "Insignias Otorgadas" en el panel de administrador.
@@ -4521,6 +4848,7 @@
 
       const payload = {
         studentId: student.id,
+        studentUid: student.uid || ((currentUser && currentUser.id === student.id) ? currentUser.uid : null),
         studentUsername: student.username,
         studentName: student.name,
         badgeId: badge.id,
@@ -4783,9 +5111,9 @@
           </span>
           <h3 class="text-lg font-black text-slate-900 leading-tight">${escapeHtml(award.badgeName)}</h3>
         </div>
-        <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml((badge && badge.criterio) || '')}</p>
+        <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(award.criterio || (badge && badge.criterio) || '')}</p>
         <div class="text-left text-xs bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-1.5">
-          <div class="flex justify-between"><span class="text-slate-400 font-semibold">Otorgada a:</span><span class="font-bold text-slate-800">${escapeHtml(maskParticipantName(award.studentName))}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-semibold">Otorgada a:</span><span class="font-bold text-slate-800">${escapeHtml(award.nameMasked ? award.studentName : maskParticipantName(award.studentName))}</span></div>
           <div class="flex justify-between"><span class="text-slate-400 font-semibold">Emitido por:</span><span class="font-bold text-slate-800">ACADEMIA SST</span></div>
           <div class="flex justify-between"><span class="text-slate-400 font-semibold">Fecha:</span><span class="font-bold text-slate-800">${escapeHtml(award.issueDate)}</span></div>
           <div class="flex justify-between"><span class="text-slate-400 font-semibold">Folio:</span><span class="font-mono font-bold text-slate-800">${escapeHtml(award.folio)}</span></div>
