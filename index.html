@@ -2698,8 +2698,8 @@
 
       const playerBox = document.getElementById('classroom-video-player-box');
       const videoWrapper = document.getElementById('classroom-video-wrapper');
-      const hasSlides = (mod.slideCount || 0) > 0;
-      if (hasSlides && !(mod.videoUrl || '').trim()) {
+      // La clase puede tener video, presentación o ambos: solo se muestra lo que exista.
+      if (!hasRealVideo(mod.videoUrl)) {
         videoWrapper.classList.add('hidden');
         playerBox.innerHTML = '';
       } else {
@@ -3939,7 +3939,7 @@
         {
           id: "m-" + Date.now() + "-1",
           title: "Módulo 1: Introducción y Fundamentos",
-          videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          videoUrl: "",
           description: "Conceptos iniciales y objetivos de la lección.",
           driveUrl: ""
         }
@@ -4067,7 +4067,7 @@
       tempFormModules.push({
         id: "m-" + Date.now() + "-" + newNum,
         title: `Módulo ${newNum}: Título del Módulo`,
-        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        videoUrl: "",
         description: "Descripción de los conceptos abordados en este módulo...",
         driveUrl: ""
       });
@@ -4085,13 +4085,17 @@
 
     function renderFormModules() {
       const container = document.getElementById('form-modules-container');
+      // Limpia el video de ejemplo para que el campo quede vacío (= sin video)
+      tempFormModules.forEach(m => { if (!hasRealVideo(m.videoUrl)) m.videoUrl = ''; });
       container.innerHTML = tempFormModules.map((mod, i) => {
+        const content = moduleContentLabel(mod);
         return `
           <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative">
             <div class="flex items-center justify-between">
               <span class="font-bold text-slate-800 text-xs flex items-center gap-2">
                 <span class="w-5 h-5 rounded-md bg-brand-600 text-white flex items-center justify-center font-bold text-[10px]">${i + 1}</span>
                 Configuración del Módulo #${i + 1}
+                <span class="px-2 py-0.5 rounded-md border text-[10px] font-bold ${content.cls}">${content.text}</span>
               </span>
               <button type="button" onclick="removeModuleFromForm(${i})" class="text-rose-500 hover:text-rose-700 text-xs font-semibold">
                 <i class="fa-solid fa-trash-can"></i> Eliminar Módulo
@@ -4105,8 +4109,11 @@
               </div>
 
               <div>
-                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Enlace del Video (YouTube o MP4):</label>
-                <input type="text" value="${escapeHtml(mod.videoUrl)}" onchange="updateModuleField(${i}, 'videoUrl', this.value)" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-brand-500">
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Enlace del Video (YouTube o MP4) — opcional:</label>
+                <div class="flex gap-1.5">
+                  <input type="text" value="${escapeHtml(mod.videoUrl)}" onchange="updateModuleField(${i}, 'videoUrl', this.value.trim()); renderFormModules();" placeholder="Vacío = la clase no lleva video" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-brand-500">
+                  ${mod.videoUrl ? `<button type="button" onclick="updateModuleField(${i}, 'videoUrl', ''); renderFormModules();" class="px-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold" title="Quitar video"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                </div>
               </div>
 
               <div class="sm:col-span-2">
@@ -4131,7 +4138,7 @@
                     <button type="button" onclick="removeModuleSlides(${i})" class="text-rose-500 hover:text-rose-700 font-semibold"><i class="fa-solid fa-trash-can"></i> Quitar presentación</button>
                   </div>` : ''}
                 <input type="file" accept="application/pdf,.pdf" onchange="uploadModuleSlidesPdf(${i}, this)" class="block w-full text-[11px] text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
-                <p id="module-slides-status-${i}" class="text-[10px] text-slate-400">${mod.slideCount > 0 ? 'Sube otro PDF para reemplazarla.' : 'Exporta tu presentación (PowerPoint, Canva o Google Slides) como PDF y súbela aquí. Si dejas vacío el enlace de video, solo se mostrará la presentación.'}</p>
+                <p id="module-slides-status-${i}" class="text-[10px] text-slate-400">${mod.slideCount > 0 ? 'Sube otro PDF para reemplazarla.' : 'Exporta tu presentación (PowerPoint, Canva o Google Slides) como PDF y súbela aquí. Puedes usar solo video, solo presentación o ambos.'}</p>
               </div>
             </div>
           </div>
@@ -4292,6 +4299,20 @@
       } catch (err) {
         showToast('No se pudo eliminar el curso: ' + err.message, 'error');
       }
+    }
+
+    // El enlace de ejemplo (dQw4w9WgXcQ) que traían los módulos nuevos se trata como "sin video".
+    function hasRealVideo(url) {
+      const u = (url || '').trim();
+      return !!u && !u.includes('dQw4w9WgXcQ');
+    }
+
+    function moduleContentLabel(mod) {
+      const v = hasRealVideo(mod.videoUrl), p = (mod.slideCount || 0) > 0;
+      if (v && p) return { text: 'Video + Presentación', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+      if (v) return { text: 'Solo video', cls: 'bg-sky-50 text-sky-700 border-sky-200' };
+      if (p) return { text: 'Solo presentación', cls: 'bg-brand-50 text-brand-700 border-brand-200' };
+      return { text: 'Sin video ni presentación', cls: 'bg-amber-50 text-amber-700 border-amber-200' };
     }
 
     function resolveEmbedUrl(url) {
