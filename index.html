@@ -97,6 +97,19 @@
       background: #cbd5e1;
       border-radius: 9999px;
     }
+    /* ===== Visor de presentaciones (solo lectura) ===== */
+    .slides-stage { position: relative; background: #0f172a; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .slides-stage img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; -webkit-user-drag: none; user-select: none; }
+    .slides-stage .slides-shield { position: absolute; inset: 0; z-index: 2; }
+    .slides-stage .slides-nav { position: absolute; top: 0; bottom: 0; width: 22%; z-index: 3; display: flex; align-items: center; cursor: pointer; opacity: 0; transition: opacity .2s; }
+    .slides-stage:hover .slides-nav { opacity: 1; }
+    .slides-stage .slides-nav.left { left: 0; justify-content: flex-start; padding-left: 12px; }
+    .slides-stage .slides-nav.right { right: 0; justify-content: flex-end; padding-right: 12px; }
+    .slides-stage .slides-nav span { width: 42px; height: 42px; border-radius: 9999px; background: rgba(15,23,42,.65); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .slides-stage .slides-nav.disabled { pointer-events: none; opacity: 0 !important; }
+    #classroom-slides-card:fullscreen { background: #000; display: flex; flex-direction: column; justify-content: center; }
+    #classroom-slides-card:fullscreen .slides-stage { aspect-ratio: auto; flex: 1; }
+    @media print { #classroom-slides-card { display: none !important; } }
   </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col font-sans antialiased bg-slate-50 selection:bg-brand-500 selection:text-white">
@@ -324,11 +337,21 @@
 
     <!-- ==================== VISTA 2: AULA VIRTUAL MULTI-MÓDULO (CLASE Y VIDEO) ==================== -->
     <section id="view-classroom" class="hidden space-y-6 animate-fade">
-      
+
+      <!-- Aviso de Vista Previa (solo administradores) -->
+      <div id="classroom-preview-banner" class="hidden items-center justify-between gap-3 flex-wrap px-4 py-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-eye"></i> Vista previa del participante — nada de lo que hagas aquí (avance, examen) se guarda.
+        </span>
+        <button onclick="exitCoursePreview()" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-xmark"></i> Salir de vista previa
+        </button>
+      </div>
+
       <!-- Barra superior de navegación de clase -->
       <div class="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-200">
-        <button onclick="navigateTo('student-catalog')" class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-brand-600 transition">
-          <i class="fa-solid fa-arrow-left"></i> Volver a mis Cursos
+        <button id="btn-classroom-back" onclick="classroomGoBack()" class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-brand-600 transition">
+          <i class="fa-solid fa-arrow-left"></i> <span id="btn-classroom-back-label">Volver a mis Cursos</span>
         </button>
         <div class="flex items-center gap-3">
           <span id="classroom-overall-progress" class="text-xs font-bold text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
@@ -346,9 +369,42 @@
         <div class="lg:col-span-2 space-y-6">
           
           <!-- Contenedor del Reproductor de Video -->
-          <div class="bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+          <div id="classroom-video-wrapper" class="bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
             <div id="classroom-video-player-box" class="aspect-video-container bg-slate-950 flex items-center justify-center text-white">
               <!-- Iframe o video mp4 -->
+            </div>
+          </div>
+
+          <!-- Visor de Presentación (solo lectura: adelante / atrás) -->
+          <div id="classroom-slides-card" class="hidden bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800" oncontextmenu="return false;">
+            <div class="flex items-center justify-between px-4 py-2.5 bg-slate-950 text-white">
+              <span class="text-[11px] font-black uppercase tracking-widest text-brand-200 flex items-center gap-2">
+                <i class="fa-solid fa-person-chalkboard"></i> Presentación de la clase
+              </span>
+              <button type="button" onclick="toggleSlidesFullscreen()" class="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5" title="Pantalla completa">
+                <i class="fa-solid fa-expand"></i> <span class="hidden sm:inline">Pantalla completa</span>
+              </button>
+            </div>
+            <div id="slides-stage" class="slides-stage">
+              <img id="slides-current-img" alt="" draggable="false">
+              <div class="slides-shield"></div>
+              <div id="slides-nav-left" class="slides-nav left" onclick="navigateSlide(-1)"><span><i class="fa-solid fa-chevron-left"></i></span></div>
+              <div id="slides-nav-right" class="slides-nav right" onclick="navigateSlide(1)"><span><i class="fa-solid fa-chevron-right"></i></span></div>
+              <div id="slides-loading" class="absolute inset-0 z-[4] hidden items-center justify-center text-slate-300 text-xs font-semibold gap-2 bg-slate-900">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando presentación...
+              </div>
+            </div>
+            <div class="flex items-center justify-between px-4 py-2.5 bg-slate-950 text-white gap-3">
+              <button type="button" id="btn-prev-slide" onclick="navigateSlide(-1)" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5">
+                <i class="fa-solid fa-chevron-left"></i> Anterior
+              </button>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <span id="slides-counter" class="text-[11px] font-bold text-slate-300">Diapositiva 1 de 1</span>
+                <div class="w-full max-w-xs h-1 bg-slate-800 rounded-full overflow-hidden"><div id="slides-progress-bar" class="h-full bg-brand-500 transition-all" style="width:0%"></div></div>
+              </div>
+              <button type="button" id="btn-next-slide" onclick="navigateSlide(1)" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5">
+                Siguiente <i class="fa-solid fa-chevron-right"></i>
+              </button>
             </div>
           </div>
 
@@ -1373,6 +1429,8 @@
       return !!user && user.role === 'admin';
     }
     let currentCourseId = null;
+    let isCoursePreview = false;      // Vista previa del curso desde el panel de administración
+    let previewEnrollment = null;     // Inscripción simulada (solo en memoria) para la vista previa
     let currentModuleIndex = 0;
     let editingCourseId = null;
     let editingStudentId = null;
@@ -2125,6 +2183,8 @@
     function handleLogout() {
       currentUser = null;
       currentCourseId = null;
+      isCoursePreview = false;
+      previewEnrollment = null;
       updateHeaderSessionUI();
       navigateTo('login');
       document.getElementById('login-username').value = '';
@@ -2342,6 +2402,7 @@
 
       currentCourseId = courseId;
       currentModuleIndex = 0;
+      applyClassroomPreviewUI();
 
       const quizSection = document.getElementById('classroom-quiz-section');
       if (quizSection) quizSection.classList.add('hidden');
@@ -2395,9 +2456,20 @@
       document.getElementById('btn-next-module').disabled = (index === course.modules.length - 1);
 
       const playerBox = document.getElementById('classroom-video-player-box');
+      const videoWrapper = document.getElementById('classroom-video-wrapper');
+      const hasSlides = (mod.slideCount || 0) > 0;
+      if (hasSlides && !(mod.videoUrl || '').trim()) {
+        videoWrapper.classList.add('hidden');
+        playerBox.innerHTML = '';
+      } else {
+        videoWrapper.classList.remove('hidden');
+      }
+      loadModuleSlides(mod);
       const resolved = resolveEmbedUrl(mod.videoUrl);
 
-      if (resolved.isIframe) {
+      if (videoWrapper.classList.contains('hidden')) {
+        // Módulo solo con presentación: no se carga video
+      } else if (resolved.isIframe) {
         playerBox.innerHTML = `
           <iframe src="${resolved.url}" title="${mod.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen class="rounded-2xl"></iframe>
         `;
@@ -2423,6 +2495,222 @@
       renderClassroomModulesList(course);
     }
 
+    // ===================== VISOR DE PRESENTACIONES (SOLO LECTURA) =====================
+    // Las diapositivas se guardan como imágenes JPEG en la colección 'moduleSlides'
+    // (un documento por diapositiva: moduleId, index, img). El módulo guarda 'slideCount'.
+    const slidesCache = {};
+    let activeSlides = [];
+    let activeSlideIndex = 0;
+    let activeSlidesModuleId = null;
+
+    async function fetchModuleSlides(moduleId) {
+      if (slidesCache[moduleId]) return slidesCache[moduleId];
+      const snap = await db.collection('moduleSlides').where('moduleId', '==', moduleId).get();
+      const list = [];
+      snap.forEach(doc => list.push(doc.data()));
+      list.sort((a, b) => a.index - b.index);
+      const imgs = list.map(d => d.img);
+      slidesCache[moduleId] = imgs;
+      return imgs;
+    }
+
+    async function loadModuleSlides(mod) {
+      const card = document.getElementById('classroom-slides-card');
+      const loading = document.getElementById('slides-loading');
+      if (!mod || !(mod.slideCount > 0)) {
+        card.classList.add('hidden');
+        activeSlides = []; activeSlidesModuleId = null;
+        return;
+      }
+      card.classList.remove('hidden');
+      activeSlidesModuleId = mod.id;
+      activeSlideIndex = 0;
+      loading.classList.remove('hidden'); loading.classList.add('flex');
+      try {
+        const imgs = await fetchModuleSlides(mod.id);
+        if (activeSlidesModuleId !== mod.id) return; // el alumno ya cambió de módulo
+        activeSlides = imgs;
+        if (imgs.length === 0) { card.classList.add('hidden'); return; }
+        renderActiveSlide();
+      } catch (err) {
+        showToast('No se pudo cargar la presentación: ' + err.message, 'error');
+        card.classList.add('hidden');
+      } finally {
+        loading.classList.add('hidden'); loading.classList.remove('flex');
+      }
+    }
+
+    function renderActiveSlide() {
+      const total = activeSlides.length;
+      if (!total) return;
+      const img = document.getElementById('slides-current-img');
+      img.src = activeSlides[activeSlideIndex];
+      document.getElementById('slides-counter').textContent = `Diapositiva ${activeSlideIndex + 1} de ${total}`;
+      document.getElementById('slides-progress-bar').style.width = `${Math.round(((activeSlideIndex + 1) / total) * 100)}%`;
+      const atStart = activeSlideIndex === 0, atEnd = activeSlideIndex === total - 1;
+      document.getElementById('btn-prev-slide').disabled = atStart;
+      document.getElementById('btn-next-slide').disabled = atEnd;
+      document.getElementById('slides-nav-left').classList.toggle('disabled', atStart);
+      document.getElementById('slides-nav-right').classList.toggle('disabled', atEnd);
+      // Precarga la siguiente
+      if (!atEnd) { const pre = new Image(); pre.src = activeSlides[activeSlideIndex + 1]; }
+    }
+
+    function navigateSlide(delta) {
+      const next = activeSlideIndex + delta;
+      if (next < 0 || next >= activeSlides.length) return;
+      activeSlideIndex = next;
+      renderActiveSlide();
+    }
+
+    function toggleSlidesFullscreen() {
+      const card = document.getElementById('classroom-slides-card');
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (card.requestFullscreen) {
+        card.requestFullscreen().catch(() => {});
+      } else if (card.webkitRequestFullscreen) {
+        card.webkitRequestFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const card = document.getElementById('classroom-slides-card');
+      if (!card || card.classList.contains('hidden') || !activeSlides.length) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target.tagName || '').toUpperCase())) return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); navigateSlide(1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); navigateSlide(-1); }
+    });
+
+    // Deslizar con el dedo en celular / tablet
+    (function enableSlideSwipe() {
+      let startX = null;
+      document.addEventListener('touchstart', (e) => {
+        if (e.target.closest && e.target.closest('#slides-stage')) startX = e.touches[0].clientX;
+      }, { passive: true });
+      document.addEventListener('touchend', (e) => {
+        if (startX === null) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        startX = null;
+        if (Math.abs(dx) > 40) navigateSlide(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    })();
+
+    // ---------- Administración: subir presentación PDF a un módulo ----------
+    let pdfjsLoadingPromise = null;
+    function loadPdfJs() {
+      if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+      if (pdfjsLoadingPromise) return pdfjsLoadingPromise;
+      pdfjsLoadingPromise = new Promise((resolve, reject) => {
+        const sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        sc.onload = () => {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        };
+        sc.onerror = () => { pdfjsLoadingPromise = null; reject(new Error('No se pudo cargar el lector de PDF.')); };
+        document.head.appendChild(sc);
+      });
+      return pdfjsLoadingPromise;
+    }
+
+    function setSlidesUploadStatus(index, text) {
+      const el = document.getElementById(`module-slides-status-${index}`);
+      if (el) el.innerHTML = text;
+    }
+
+    async function deleteSlidesFromIndex(moduleId, fromIndex) {
+      const snap = await db.collection('moduleSlides').where('moduleId', '==', moduleId).get();
+      const refs = [];
+      snap.forEach(doc => { if ((doc.data().index || 0) >= fromIndex) refs.push(doc.ref); });
+      for (let i = 0; i < refs.length; i += 400) {
+        const batch = db.batch();
+        refs.slice(i, i + 400).forEach(r => batch.delete(r));
+        await batch.commit();
+      }
+    }
+
+    async function uploadModuleSlidesPdf(index, input) {
+      const file = input.files && input.files[0];
+      const mod = tempFormModules[index];
+      if (!file || !mod) return;
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        showToast('Selecciona un archivo PDF (exporta tu presentación como PDF).', 'error');
+        input.value = '';
+        return;
+      }
+      input.disabled = true;
+      try {
+        setSlidesUploadStatus(index, '<i class="fa-solid fa-circle-notch fa-spin"></i> Leyendo PDF...');
+        const pdfjsLib = await loadPdfJs();
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const total = pdf.numPages;
+        if (total > 150) throw new Error('La presentación tiene más de 150 páginas.');
+
+        for (let p = 1; p <= total; p++) {
+          setSlidesUploadStatus(index, `<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando diapositiva ${p} de ${total}...`);
+          const page = await pdf.getPage(p);
+          const base = page.getViewport({ scale: 1 });
+          const scale = 1600 / Math.max(base.width, base.height);
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(viewport.width);
+          canvas.height = Math.round(viewport.height);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          // Firestore admite documentos de hasta 1 MB: se ajusta la calidad si hace falta
+          let quality = 0.82, dataUrl = canvas.toDataURL('image/jpeg', quality);
+          while (dataUrl.length > 900000 && quality > 0.4) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          if (dataUrl.length > 900000) throw new Error(`La diapositiva ${p} es demasiado pesada.`);
+
+          await db.collection('moduleSlides').doc(`${mod.id}_${String(p - 1).padStart(3, '0')}`).set({
+            moduleId: mod.id,
+            index: p - 1,
+            img: dataUrl,
+            updatedAt: new Date().toISOString()
+          });
+        }
+
+        // Elimina diapositivas sobrantes de una versión anterior más larga
+        await deleteSlidesFromIndex(mod.id, total);
+
+        mod.slideCount = total;
+        mod.slidesFileName = file.name;
+        delete slidesCache[mod.id];
+        renderFormModules();
+        showToast(`Presentación cargada (${total} diapositivas). Recuerda pulsar "Guardar Curso y Módulos".`, 'success');
+      } catch (err) {
+        setSlidesUploadStatus(index, `<span class="text-rose-600">Error: ${escapeHtml(err.message)}</span>`);
+        showToast('No se pudo cargar la presentación: ' + err.message, 'error');
+      } finally {
+        input.disabled = false;
+        input.value = '';
+      }
+    }
+
+    async function removeModuleSlides(index) {
+      const mod = tempFormModules[index];
+      if (!mod || !mod.slideCount) return;
+      if (!confirm('¿Quitar la presentación de este módulo?')) return;
+      try {
+        await deleteSlidesFromIndex(mod.id, 0);
+        mod.slideCount = 0;
+        mod.slidesFileName = '';
+        delete slidesCache[mod.id];
+        renderFormModules();
+        showToast('Presentación eliminada. Pulsa "Guardar Curso y Módulos" para aplicar el cambio.', 'info');
+      } catch (err) {
+        showToast('No se pudo quitar la presentación: ' + err.message, 'error');
+      }
+    }
+    // ================================================================================
+
     function navigateModule(delta) {
       const course = coursesData.find(c => c.id === currentCourseId);
       if (!course) return;
@@ -2443,6 +2731,14 @@
         updatedList = [...completed, mod.id];
       } else {
         updatedList = completed.filter(id => id !== mod.id);
+      }
+
+      if (isCoursePreview) {
+        enrollment.completedModules = updatedList;
+        showToast('Vista previa: el avance no se guarda.', 'info');
+        loadActiveModule(course, currentModuleIndex);
+        updateClassroomProgressUI();
+        return;
       }
 
       try {
@@ -2497,7 +2793,47 @@
       if (course) loadActiveModule(course, index);
     }
 
+    // ===================== VISTA PREVIA DEL CURSO (ADMIN) =====================
+    function previewCourseAsStudent(courseId) {
+      if (!isStaffUser(currentUser)) return;
+      isCoursePreview = true;
+      previewEnrollment = { id: null, courseId, completedModules: [], passed: false, status: 'approved' };
+      openClassroom(courseId);
+    }
+
+    function exitCoursePreview() {
+      isCoursePreview = false;
+      previewEnrollment = null;
+      currentCourseId = null;
+      applyClassroomPreviewUI();
+      navigateTo('admin-dashboard');
+    }
+
+    function classroomGoBack() {
+      if (isCoursePreview) exitCoursePreview();
+      else navigateTo('student-catalog');
+    }
+
+    function applyClassroomPreviewUI() {
+      const banner = document.getElementById('classroom-preview-banner');
+      const backLabel = document.getElementById('btn-classroom-back-label');
+      const badge = document.getElementById('classroom-status-badge');
+      if (isCoursePreview) {
+        banner.classList.remove('hidden'); banner.classList.add('flex');
+        backLabel.textContent = 'Volver al Panel de Administración';
+        badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1.5';
+        badge.innerHTML = '<i class="fa-solid fa-eye"></i> Vista previa';
+      } else {
+        banner.classList.add('hidden'); banner.classList.remove('flex');
+        backLabel.textContent = 'Volver a mis Cursos';
+        badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1.5';
+        badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Acceso Autorizado';
+      }
+    }
+    // ===========================================================================
+
     function getActiveEnrollment() {
+      if (isCoursePreview) return previewEnrollment;
       if (!currentUser) return null;
       return enrollmentsDB.find(e => e.studentId === currentUser.id && e.courseId === currentCourseId);
     }
@@ -2642,6 +2978,15 @@
       const scorePercentage = Math.round((correctAnswersCount / course.questions.length) * 100);
       const isApproved = scorePercentage >= course.passingScore;
       const feedback = document.getElementById('quiz-submission-feedback');
+
+      if (isCoursePreview) {
+        feedback.innerHTML = `
+          <span class="text-amber-700 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-eye"></i> Vista previa: calificación ${scorePercentage}% (${isApproved ? 'aprobaría' : 'no aprobaría'}). Este resultado no se guarda ni genera constancia.
+          </span>
+        `;
+        return;
+      }
 
       if (isApproved) {
         const certCode = enrollment.certCode || ('SST-' + Math.floor(100000 + Math.random() * 900000));
@@ -2831,6 +3176,9 @@
             <td class="p-4 text-slate-600">${qCount} reactivos</td>
             <td class="p-4 text-brand-700 font-bold">${c.passingScore}%</td>
             <td class="p-4 text-right space-x-2">
+              <button onclick="previewCourseAsStudent('${c.id}')" class="px-2.5 py-1.5 text-amber-600 hover:text-amber-800 font-bold rounded-lg hover:bg-amber-50 transition" title="Ver el curso como lo verá el participante">
+                <i class="fa-solid fa-eye"></i> Vista previa
+              </button>
               <button onclick="editCourseModal('${c.id}')" class="px-2.5 py-1.5 text-indigo-600 hover:text-indigo-800 font-bold rounded-lg hover:bg-indigo-50 transition" title="Editar módulos">
                 <i class="fa-solid fa-pen-to-square"></i> Editar
               </button>
@@ -3470,6 +3818,19 @@
                   <i class="fa-brands fa-google-drive text-amber-500"></i> Material de la Sesión (Drive) — opcional:
                 </label>
                 <input type="text" value="${escapeHtml(mod.driveUrl || '')}" onchange="updateModuleField(${i}, 'driveUrl', this.value)" placeholder="https://drive.google.com/drive/folders/... (déjalo vacío para usar solo el material general del curso)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-brand-500">
+              </div>
+
+              <div class="sm:col-span-2 p-3 bg-white border border-dashed border-brand-200 rounded-xl space-y-2">
+                <label class="block text-[11px] font-semibold text-slate-600">
+                  <i class="fa-solid fa-person-chalkboard text-brand-600"></i> Presentación de la clase (PDF) — opcional, el alumno solo podrá verla:
+                </label>
+                ${mod.slideCount > 0 ? `
+                  <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <span class="text-emerald-700 font-semibold"><i class="fa-solid fa-circle-check"></i> ${mod.slideCount} diapositivas cargadas${mod.slidesFileName ? ' · ' + escapeHtml(mod.slidesFileName) : ''}</span>
+                    <button type="button" onclick="removeModuleSlides(${i})" class="text-rose-500 hover:text-rose-700 font-semibold"><i class="fa-solid fa-trash-can"></i> Quitar presentación</button>
+                  </div>` : ''}
+                <input type="file" accept="application/pdf,.pdf" onchange="uploadModuleSlidesPdf(${i}, this)" class="block w-full text-[11px] text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                <p id="module-slides-status-${i}" class="text-[10px] text-slate-400">${mod.slideCount > 0 ? 'Sube otro PDF para reemplazarla.' : 'Exporta tu presentación (PowerPoint, Canva o Google Slides) como PDF y súbela aquí. Si dejas vacío el enlace de video, solo se mostrará la presentación.'}</p>
               </div>
             </div>
           </div>
