@@ -4237,8 +4237,9 @@
       }
 
       for (let i = 0; i < tempFormModules.length; i++) {
-        if (!tempFormModules[i].title.trim() || !tempFormModules[i].videoUrl.trim()) {
-          showToast(`El Módulo #${i + 1} requiere título y enlace de video.`, 'error');
+        // El video y la presentación son opcionales; solo el título es obligatorio.
+        if (!(tempFormModules[i].title || '').trim()) {
+          showToast(`El Módulo #${i + 1} requiere un título.`, 'error');
           return;
         }
       }
