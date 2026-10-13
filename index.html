@@ -280,6 +280,28 @@
         </div>
       </div>
 
+      <!-- Mis Cursos (inscrito o pendiente) -->
+      <div id="student-mycourses-wrap" class="space-y-4 hidden">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-user-graduate text-brand-600"></i> Mis Cursos
+        </h3>
+        <div id="student-mycourses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </div>
+
+      <!-- Catálogo con filtros por categoría -->
+      <div class="space-y-4">
+        <h3 id="student-catalog-title" class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-compass text-brand-600"></i> Explorar Cursos
+        </h3>
+        <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div id="student-category-chips" class="flex flex-wrap gap-2 flex-1"></div>
+          <div class="relative lg:w-72">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input id="student-course-search" type="search" oninput="setStudentCourseSearch(this.value)" placeholder="Buscar curso o norma (ej. 019)" class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-full outline-none focus:ring-2 focus:ring-brand-500 shadow-sm">
+          </div>
+        </div>
+      </div>
+
       <!-- Grid de Cursos del Estudiante -->
       <div id="student-courses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Generado dinámicamente -->
@@ -2488,26 +2510,67 @@
       }
     }
 
-    function renderStudentCatalog() {
-      if (!currentUser || currentUser.role !== 'student') return;
+    // ---- Catálogo del estudiante: categorías, búsqueda y "Mis cursos" ----
+    let studentCategoryFilter = 'all';
+    let studentCourseSearch = '';
+    let studentCatsCache = [];
 
-      const container = document.getElementById('student-courses-grid');
-      const counter = document.getElementById('student-catalog-counter');
-      counter.textContent = `${coursesData.length} cursos disponibles`;
+    function normalizeText(t) {
+      return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    }
 
-      if (coursesData.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full py-12 text-center bg-white rounded-3xl border border-dashed border-slate-300">
-            <i class="fa-solid fa-graduation-cap text-4xl text-slate-300 mb-2"></i>
-            <h3 class="text-sm font-bold text-slate-700">No hay cursos registrados todavía</h3>
-          </div>
-        `;
-        return;
-      }
+    function categoryKey(course) {
+      return normalizeText(course.category) || 'sin categoria';
+    }
 
-      container.innerHTML = getOrderedCourses().map(course => {
+    function categoryIcon(label) {
+      const k = normalizeText(label);
+      if (k === 'ia' || k.includes('inteligencia') || k.includes('tecnolog') || k.includes('innovac')) return 'fa-robot';
+      if (k.includes('normativ') || k.startsWith('nom')) return 'fa-clipboard-check';
+      if (k.includes('certific') || k.includes('estandar') || k.startsWith('ec')) return 'fa-certificate';
+      if (k.includes('legal') || k.includes('capacitac') || k.includes('ley')) return 'fa-scale-balanced';
+      if (k.includes('salud') || k.includes('higiene')) return 'fa-heart-pulse';
+      return 'fa-folder-open';
+    }
+
+    function getStudentCategories(list) {
+      const map = new Map();
+      list.forEach(c => {
+        const key = categoryKey(c);
+        if (!map.has(key)) map.set(key, { key, label: (c.category || 'Sin categoría').trim(), count: 0 });
+        map.get(key).count++;
+      });
+      return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    }
+
+    function setStudentCategory(key) {
+      studentCategoryFilter = key;
+      renderStudentCatalog();
+    }
+
+    function setStudentCourseSearch(value) {
+      studentCourseSearch = value;
+      renderStudentCatalog();
+    }
+
+    function isMyCourse(course) {
+      const e = enrollmentsDB.find(x => x.studentId === currentUser.id && x.courseId === course.id);
+      return !!e && (e.status === 'approved' || e.status === 'pending');
+    }
+
+    function buildStudentCourseCard(course) {
         const enrollment = enrollmentsDB.find(e => e.studentId === currentUser.id && e.courseId === course.id);
         const moduleCount = course.modules ? course.modules.length : 0;
+        let progressBar = '';
+        if (enrollment && enrollment.status === 'approved' && moduleCount > 0) {
+          const done = (enrollment.completedModules || []).length;
+          const pct = enrollment.passed ? 100 : Math.min(100, Math.round(done / moduleCount * 100));
+          progressBar = `
+                <div class="space-y-1">
+                  <div class="flex justify-between text-[11px] font-semibold text-slate-600"><span>Avance</span><span>${pct}%</span></div>
+                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${enrollment.passed ? 'bg-emerald-500' : 'bg-brand-600'} rounded-full" style="width:${pct}%"></div></div>
+                </div>`;
+        }
         
         let statusBadge = '';
         let actionButton = '';
@@ -2582,6 +2645,7 @@
                   ${course.description}
                 </p>
 
+                ${progressBar}
                 <div class="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">
                   <span class="flex items-center gap-1 font-semibold text-slate-700">
                     <i class="fa-solid fa-layer-group text-brand-600"></i> ${moduleCount} Módulos
@@ -2598,7 +2662,78 @@
             </div>
           </div>
         `;
-      }).join('');
+    }
+
+    function renderStudentCatalog() {
+      if (!currentUser || currentUser.role !== 'student') return;
+
+      const container = document.getElementById('student-courses-grid');
+      const counter = document.getElementById('student-catalog-counter');
+      const chips = document.getElementById('student-category-chips');
+      const myWrap = document.getElementById('student-mycourses-wrap');
+      const myGrid = document.getElementById('student-mycourses-grid');
+      counter.textContent = `${coursesData.length} cursos disponibles`;
+
+      if (coursesData.length === 0) {
+        myWrap.classList.add('hidden');
+        chips.innerHTML = '';
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+            <i class="fa-solid fa-graduation-cap text-4xl text-slate-300 mb-2"></i>
+            <h3 class="text-sm font-bold text-slate-700">No hay cursos registrados todavía</h3>
+          </div>
+        `;
+        return;
+      }
+
+      const ordered = getOrderedCourses();
+      const mine = ordered.filter(isMyCourse);
+      const others = ordered.filter(c => !isMyCourse(c));
+
+      // Mis cursos
+      if (mine.length) {
+        myWrap.classList.remove('hidden');
+        myGrid.innerHTML = mine.map(buildStudentCourseCard).join('');
+      } else {
+        myWrap.classList.add('hidden');
+        myGrid.innerHTML = '';
+      }
+
+      // Chips de categoría (sobre los cursos por explorar)
+      const cats = getStudentCategories(others);
+      studentCatsCache = cats;
+      if (studentCategoryFilter !== 'all' && !cats.some(c => c.key === studentCategoryFilter)) studentCategoryFilter = 'all';
+      const chipClass = active => active
+        ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+        : 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:text-brand-700';
+      chips.innerHTML = [
+        `<button onclick="setStudentCategory('all')" class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition flex items-center gap-1.5 ${chipClass(studentCategoryFilter === 'all')}"><i class="fa-solid fa-border-all"></i> Todos <span class="opacity-70">(${others.length})</span></button>`,
+        ...cats.map((c, i) => `<button onclick="setStudentCategory(studentCatsCache[${i}].key)" class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition flex items-center gap-1.5 ${chipClass(studentCategoryFilter === c.key)}"><i class="fa-solid ${categoryIcon(c.label)}"></i> ${escapeHtml(c.label)} <span class="opacity-70">(${c.count})</span></button>`)
+      ].join('');
+
+      // Filtro + búsqueda
+      const q = normalizeText(studentCourseSearch);
+      const filtered = others.filter(c =>
+        (studentCategoryFilter === 'all' || categoryKey(c) === studentCategoryFilter) &&
+        (!q || normalizeText([c.title, c.description, c.category, c.instructor].join(' ')).includes(q))
+      );
+
+      if (others.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-10 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+            <i class="fa-solid fa-circle-check text-3xl text-emerald-400 mb-2"></i>
+            <h3 class="text-sm font-bold text-slate-700">Ya estás inscrito en todos los cursos disponibles</h3>
+          </div>`;
+      } else if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-10 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+            <i class="fa-solid fa-magnifying-glass text-3xl text-slate-300 mb-2"></i>
+            <h3 class="text-sm font-bold text-slate-700">No encontramos cursos con ese criterio</h3>
+            <button onclick="document.getElementById('student-course-search').value=''; studentCourseSearch=''; setStudentCategory('all');" class="mt-3 text-xs font-bold text-brand-600 hover:underline">Ver todos los cursos</button>
+          </div>`;
+      } else {
+        container.innerHTML = filtered.map(buildStudentCourseCard).join('');
+      }
     }
 
     async function alertarNuevaInscripcion(nombreAlumno, nombreCurso) { const telefono = '5215573446150'; const apikey = '9610624'; const mensaje = encodeURIComponent('Nueva inscripcion por autorizar: ' + nombreAlumno + ' - Curso: ' + nombreCurso); fetch('https://api.callmebot.com/whatsapp.php?phone=' + telefono + '&text=' + mensaje + '&apikey=' + apikey).catch(function(err){ console.error('Error WhatsApp:', err); }); } async function requestEnrollment(courseId) {
