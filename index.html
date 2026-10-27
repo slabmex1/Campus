@@ -111,6 +111,24 @@
     #classroom-slides-card:fullscreen { background: #000; display: flex; flex-direction: column; justify-content: center; }
     #classroom-slides-card:fullscreen .slides-stage { aspect-ratio: auto; flex: 1; }
     @media print { #classroom-slides-card { display: none !important; } }
+
+    /* ===== Portada pública ===== */
+    html { scroll-behavior: smooth; }
+    #view-home section[id] { scroll-margin-top: 72px; }
+    .home-hero { background:
+        radial-gradient(1100px 520px at 85% -10%, rgba(99,102,241,.35), transparent 60%),
+        radial-gradient(800px 420px at -10% 110%, rgba(250,204,21,.10), transparent 60%),
+        linear-gradient(135deg, #070f2b 0%, #0b1a4a 55%, #13246b 100%); }
+    .home-grid-dots { background-image: radial-gradient(rgba(255,255,255,.09) 1px, transparent 1px); background-size: 22px 22px; }
+    .home-collage .tile { box-shadow: 0 24px 50px -18px rgba(0,0,0,.65); }
+    .home-thumb { aspect-ratio: 16 / 9; }
+    .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .home-chips::-webkit-scrollbar { display: none; }
+    .home-faq summary::-webkit-details-marker { display: none; }
+    .home-faq details[open] .faq-icon { transform: rotate(45deg); }
+    @keyframes homeFloat { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-8px) rotate(var(--r,0deg)); } }
+    .home-float { animation: homeFloat 7s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .home-float { animation: none; } html { scroll-behavior: auto; } }
   </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col font-sans antialiased bg-slate-50 selection:bg-brand-500 selection:text-white">
@@ -126,9 +144,17 @@
           <span class="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5 leading-none">
             Campus Virtual de SST
           </span>
-          <p class="text-[11px] text-slate-400 font-medium mt-0.5">Gestión Académica, Módulos y Constancias</p>
+          <p class="hidden sm:block text-[11px] text-slate-400 font-medium mt-0.5">Gestión Académica, Módulos y Constancias</p>
         </div>
       </div>
+
+      <!-- Menú de la portada pública -->
+      <nav id="header-home-nav" class="hidden lg:flex items-center gap-1 text-[13px] font-semibold text-slate-600">
+        <button onclick="goHome('inicio')" data-home-link="inicio" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Inicio</button>
+        <button onclick="goHome('catalogo')" data-home-link="catalogo" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Catálogo de cursos</button>
+        <button onclick="goHome('precios')" data-home-link="precios" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Precios</button>
+        <button onclick="goHome('preguntas')" data-home-link="preguntas" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Preguntas frecuentes</button>
+      </nav>
 
       <!-- Barra de Usuario y Navegación de Sesión -->
       <div class="flex items-center gap-3">
@@ -150,11 +176,11 @@
         </div>
 
         <div id="header-guest-badge" class="flex items-center gap-2">
-          <button onclick="showLoginModal('student')" class="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-brand-600 hover:bg-slate-100 rounded-xl transition">
-            Acceso Alumnos
+          <button onclick="showLoginModal('student')" class="px-3 sm:px-3.5 py-2 text-xs font-bold text-brand-700 border border-brand-200 hover:border-brand-400 hover:bg-brand-50 rounded-xl transition flex items-center gap-1.5">
+            <i class="fa-regular fa-user text-[11px]"></i> Acceso Alumnos
           </button>
-          <button onclick="showLoginModal('admin')" class="px-3.5 py-1.5 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-sm transition flex items-center gap-1.5">
-            <i class="fa-solid fa-lock text-[11px]"></i> Panel Admin
+          <button onclick="showLoginModal('admin')" title="Panel Admin" class="px-3 sm:px-3.5 py-2 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-lock text-[11px]"></i> <span class="hidden sm:inline">Panel Admin</span>
           </button>
         </div>
       </div>
@@ -164,10 +190,203 @@
   <!-- Contenedor flotante de notificaciones Toast -->
   <div id="toast-box" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+  <!-- ==================== VISTA PÚBLICA: PORTADA CON CATÁLOGO, PRECIOS Y PREGUNTAS ==================== -->
+  <div id="view-home" class="hidden flex-1 bg-white">
+
+    <!-- Hero -->
+    <section id="home-inicio" class="home-hero relative overflow-hidden text-white">
+      <div class="home-grid-dots absolute inset-0 pointer-events-none"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 grid lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+        <div class="lg:col-span-7 space-y-6">
+          <span class="inline-flex items-center gap-2 px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-white/10 text-amber-300 border border-white/15 rounded-full">
+            <i class="fa-solid fa-helmet-safety"></i> Academia de Seguridad y Salud en el Trabajo
+          </span>
+          <h1 class="text-4xl sm:text-5xl lg:text-[3.6rem] font-black tracking-tight leading-[1.02]">
+            Aprende hoy para un entorno de trabajo <span class="text-amber-400">más seguro</span>
+          </h1>
+          <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+            Cursos especializados en Seguridad y Salud en el Trabajo con enfoque práctico, contenidos actualizados y constancia de capacitación con código de verificación.
+          </p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl pt-1">
+            <div class="flex flex-col gap-2"><span class="w-11 h-11 rounded-full bg-brand-600/90 ring-4 ring-brand-500/20 flex items-center justify-center"><i class="fa-solid fa-play text-sm"></i></span><span class="text-xs text-slate-200 leading-snug">Clases en línea a tu ritmo</span></div>
+            <div class="flex flex-col gap-2"><span class="w-11 h-11 rounded-full bg-brand-600/90 ring-4 ring-brand-500/20 flex items-center justify-center"><i class="fa-regular fa-file-lines text-sm"></i></span><span class="text-xs text-slate-200 leading-snug">Materiales didácticos descargables</span></div>
+            <div class="flex flex-col gap-2"><span class="w-11 h-11 rounded-full bg-brand-600/90 ring-4 ring-brand-500/20 flex items-center justify-center"><i class="fa-solid fa-list-check text-sm"></i></span><span class="text-xs text-slate-200 leading-snug">Evaluaciones y constancias</span></div>
+            <div class="flex flex-col gap-2"><span class="w-11 h-11 rounded-full bg-brand-600/90 ring-4 ring-brand-500/20 flex items-center justify-center"><i class="fa-solid fa-laptop text-sm"></i></span><span class="text-xs text-slate-200 leading-snug">Acceso desde cualquier dispositivo</span></div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <button onclick="goHome('catalogo')" class="px-6 py-3.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+              Explorar cursos <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button onclick="goHome('precios')" class="px-5 py-3.5 rounded-full border border-white/25 hover:bg-white/10 text-white font-bold text-sm transition">
+              Ver precios
+            </button>
+          </div>
+        </div>
+
+        <!-- Collage con las miniaturas reales de los cursos + beneficios -->
+        <div class="lg:col-span-5 relative">
+          <div id="home-hero-collage" class="home-collage relative h-[260px] sm:h-[320px] max-w-md mx-auto lg:mx-0 lg:ml-auto"></div>
+          <div class="relative z-30 mt-8 bg-slate-950/80 backdrop-blur border border-white/10 rounded-2xl p-4 grid grid-cols-2 gap-3 max-w-md mx-auto lg:mx-0 shadow-2xl">
+            <div class="flex items-center gap-2.5"><i class="fa-solid fa-graduation-cap text-amber-400 text-lg w-6 text-center"></i><span class="text-[11px] leading-snug text-slate-200">Formación enfocada en la normatividad STPS</span></div>
+            <div class="flex items-center gap-2.5"><i class="fa-solid fa-users text-sky-400 text-lg w-6 text-center"></i><span class="text-[11px] leading-snug text-slate-200">Cursos diseñados por expertos</span></div>
+            <div class="flex items-center gap-2.5"><i class="fa-solid fa-certificate text-amber-400 text-lg w-6 text-center"></i><span class="text-[11px] leading-snug text-slate-200">Constancia con código de verificación</span></div>
+            <div class="flex items-center gap-2.5"><i class="fa-solid fa-chart-simple text-sky-400 text-lg w-6 text-center"></i><span class="text-[11px] leading-snug text-slate-200">Aplicación inmediata en tu trabajo</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Catálogo -->
+    <section id="home-catalogo" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20 pb-8">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div>
+          <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Catálogo de cursos</p>
+          <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1">Cursos <span class="text-brand-600">disponibles</span></h2>
+          <p id="home-catalog-counter" class="text-sm text-slate-500 mt-2"></p>
+        </div>
+        <label class="relative w-full lg:w-96">
+          <span class="sr-only">Buscar curso</span>
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="home-course-search" type="search" oninput="setHomeSearch(this.value)" placeholder="Buscar curso o norma (ej. 019, alturas, EC0391)" class="w-full pl-11 pr-4 py-3 text-sm bg-white border border-slate-300 rounded-full focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none shadow-sm">
+        </label>
+      </div>
+
+      <div id="home-category-chips" class="home-chips flex gap-2 overflow-x-auto pt-6 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"></div>
+
+      <div id="home-courses-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-6"></div>
+    </section>
+
+    <!-- Precios -->
+    <section id="home-precios" class="bg-slate-50 border-y border-slate-200 mt-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 grid lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-8">
+          <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Inversión</p>
+          <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1">Precios por <span class="text-brand-600">curso</span></h2>
+          <p class="text-sm text-slate-500 mt-2 max-w-xl">Cada curso incluye acceso a todos sus módulos, materiales, evaluación final y constancia con código de verificación.</p>
+          <div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div id="home-pricing-list" class="divide-y divide-slate-100"></div>
+          </div>
+        </div>
+        <aside class="lg:col-span-4">
+          <div class="h-full rounded-2xl bg-gradient-to-br from-[#0b1a4a] to-[#13246b] text-white p-6 sm:p-7 flex flex-col shadow-xl lg:mt-[4.5rem]">
+            <span class="w-12 h-12 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-lg"><i class="fa-solid fa-building"></i></span>
+            <h3 class="text-xl font-black mt-4">Capacitación para empresas</h3>
+            <p class="text-sm text-slate-300 mt-2 leading-relaxed">¿Necesitas capacitar a un grupo de trabajadores? Cotizamos paquetes por volumen y te ayudamos con el expediente de capacitación.</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-200">
+              <li class="flex gap-2.5"><i class="fa-solid fa-circle-check text-amber-400 mt-0.5"></i> Precio preferencial por grupo</li>
+              <li class="flex gap-2.5"><i class="fa-solid fa-circle-check text-amber-400 mt-0.5"></i> Seguimiento del avance de cada participante</li>
+              <li class="flex gap-2.5"><i class="fa-solid fa-circle-check text-amber-400 mt-0.5"></i> Constancias con código de verificación</li>
+              <li class="flex gap-2.5"><i class="fa-solid fa-circle-check text-amber-400 mt-0.5"></i> Factura disponible</li>
+            </ul>
+            <div class="mt-auto pt-6 space-y-2">
+              <a id="home-quote-whatsapp" target="_blank" rel="noopener" class="w-full px-5 py-3 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-brands fa-whatsapp text-base"></i> Cotizar por WhatsApp
+              </a>
+              <a id="home-quote-email" class="w-full px-5 py-3 rounded-full border border-white/25 hover:bg-white/10 text-white font-bold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-regular fa-envelope"></i> Escribir un correo
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Cómo inscribirte + Preguntas frecuentes -->
+    <section id="home-preguntas" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 grid lg:grid-cols-12 gap-10">
+      <div class="lg:col-span-5">
+        <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Así de fácil</p>
+        <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1">¿Cómo me <span class="text-brand-600">inscribo?</span></h2>
+        <ol class="mt-7 space-y-5">
+          <li class="flex gap-4"><span class="w-9 h-9 flex-shrink-0 rounded-full bg-brand-600 text-white font-black flex items-center justify-center text-sm">1</span><div><p class="font-bold text-slate-900 text-sm">Elige tu curso</p><p class="text-xs text-slate-500 mt-0.5">Busca en el catálogo y da clic en <b>Inscribirme</b>.</p></div></li>
+          <li class="flex gap-4"><span class="w-9 h-9 flex-shrink-0 rounded-full bg-brand-600 text-white font-black flex items-center justify-center text-sm">2</span><div><p class="font-bold text-slate-900 text-sm">Inicia sesión o crea tu cuenta</p><p class="text-xs text-slate-500 mt-0.5">Si eres nuevo, regístrate con tu nombre y correo; tu contraseña te llega por email.</p></div></li>
+          <li class="flex gap-4"><span class="w-9 h-9 flex-shrink-0 rounded-full bg-brand-600 text-white font-black flex items-center justify-center text-sm">3</span><div><p class="font-bold text-slate-900 text-sm">Tu solicitud se envía sola</p><p class="text-xs text-slate-500 mt-0.5">Nuestro equipo la revisa y autoriza tu acceso al curso.</p></div></li>
+          <li class="flex gap-4"><span class="w-9 h-9 flex-shrink-0 rounded-full bg-amber-400 text-slate-900 font-black flex items-center justify-center text-sm">4</span><div><p class="font-bold text-slate-900 text-sm">Cursa, evalúate y descarga tu constancia</p><p class="text-xs text-slate-500 mt-0.5">Avanza a tu ritmo y obtén tu constancia con código de verificación.</p></div></li>
+        </ol>
+      </div>
+      <div class="lg:col-span-7">
+        <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Dudas comunes</p>
+        <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1">Preguntas <span class="text-brand-600">frecuentes</span></h2>
+        <div class="home-faq mt-7 space-y-3">
+          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
+            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Cuánto tiempo tengo para terminar un curso?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
+            <p class="text-xs text-slate-600 leading-relaxed mt-3">Avanzas a tu propio ritmo. Una vez autorizado tu acceso, puedes entrar a los módulos las veces que necesites desde cualquier dispositivo.</p>
+          </details>
+          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
+            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Cuándo se autoriza mi inscripción?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
+            <p class="text-xs text-slate-600 leading-relaxed mt-3">Al enviar tu solicitud, nuestro equipo recibe un aviso inmediato. Te contactamos para confirmar los detalles y, en cuanto se autoriza, el curso aparece desbloqueado en tu cuenta.</p>
+          </details>
+          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
+            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Qué constancia recibo?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
+            <p class="text-xs text-slate-600 leading-relaxed mt-3">Al aprobar la evaluación final obtienes una constancia de capacitación con código de verificación, que cualquier persona puede validar.</p>
+          </details>
+          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
+            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">Ya tengo cuenta, ¿cómo pido otro curso?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
+            <p class="text-xs text-slate-600 leading-relaxed mt-3">Da clic en <b>Inscribirme</b> en el curso que te interese e inicia sesión con tu usuario; la solicitud se envía automáticamente. También puedes pedirlo desde tu aula virtual.</p>
+          </details>
+          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
+            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Pueden capacitar a todo mi equipo?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
+            <p class="text-xs text-slate-600 leading-relaxed mt-3">Sí. Escríbenos desde la sección de precios y te enviamos una cotización por grupo.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Llamado final -->
+    <section class="home-hero relative overflow-hidden text-white">
+      <div class="home-grid-dots absolute inset-0 pointer-events-none"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14 grid md:grid-cols-12 gap-8 items-center">
+        <div class="md:col-span-8">
+          <h2 class="text-3xl sm:text-4xl font-black tracking-tight">Tu aprendizaje <span class="text-amber-400">en un solo lugar</span></h2>
+          <p class="text-sm text-slate-300 mt-3 max-w-xl">Inscríbete, cursa tus módulos, realiza tus evaluaciones y descarga tu constancia de capacitación con código de verificación.</p>
+          <div class="flex flex-wrap gap-3 mt-6">
+            <button onclick="showLoginModal('student')" class="px-6 py-3.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-sm transition flex items-center gap-2">Acceso al Campus Virtual <i class="fa-solid fa-arrow-right"></i></button>
+            <button onclick="openSelfRegisterModal()" class="px-5 py-3.5 rounded-full border border-white/25 hover:bg-white/10 font-bold text-sm transition">Crear mi cuenta</button>
+          </div>
+        </div>
+        <ul class="md:col-span-4 grid grid-cols-2 md:grid-cols-1 gap-3 text-sm text-slate-200">
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-sky-400"></i> Contenido actualizado</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-sky-400"></i> Enfoque práctico</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-sky-400"></i> Acceso 24/7</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-sky-400"></i> Constancias verificables</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="bg-slate-950 text-slate-400 text-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p>© <span id="home-year"></span> Campus Virtual de SST · Be Safe Consultoría</p>
+        <div class="flex items-center gap-4">
+          <a id="home-footer-email" class="hover:text-white transition"></a>
+          <a id="home-footer-whatsapp" target="_blank" rel="noopener" class="hover:text-white transition"></a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================== MODAL: DETALLE PÚBLICO DEL CURSO ==================== -->
+  <div id="modal-public-course" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4" onclick="if(event.target===this) closePublicCourseDetail()">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar" id="modal-public-course-body"></div>
+  </div>
+
+  <main id="app-main" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
     <!-- ==================== VISTA 0: PANTALLA DE ACCESO / LOGIN OBLIGATORIO ==================== -->
-    <section id="view-login" class="py-6 sm:py-12 animate-fade">
+    <section id="view-login" class="hidden py-6 sm:py-12 animate-fade">
+      <div class="max-w-md mx-auto mb-4">
+        <button onclick="goHome('catalogo')" class="text-xs font-bold text-slate-500 hover:text-brand-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-left"></i> Volver al catálogo de cursos
+        </button>
+      </div>
+      <div id="login-pending-course" class="hidden max-w-md mx-auto mb-4 p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950">
+        <div class="flex gap-3">
+          <i class="fa-solid fa-cart-plus text-amber-500 text-lg mt-0.5"></i>
+          <div class="space-y-1.5 flex-1">
+            <p class="font-bold text-sm leading-snug">Solicitud de inscripción a: <span id="login-pending-course-title" class="text-brand-700"></span></p>
+            <p class="text-amber-900/80 leading-relaxed">Inicia sesión y tu solicitud se enviará automáticamente. ¿Aún no tienes cuenta? <button type="button" onclick="openSelfRegisterModal()" class="font-extrabold text-brand-700 underline underline-offset-2">Créala aquí</button>.</p>
+            <button type="button" onclick="clearPendingEnrollment(true)" class="text-[11px] font-semibold text-amber-800/70 hover:text-amber-900">Cancelar esta solicitud</button>
+          </div>
+        </div>
+      </div>
       <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
         
         <!-- Header decorativo del formulario -->
@@ -1030,6 +1249,28 @@
             <input id="form-course-passing" type="number" min="50" max="100" value="80" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
           </div>
 
+          <!-- Portada pública: precio y visibilidad -->
+          <div class="sm:col-span-2 p-4 rounded-2xl border border-amber-200 bg-amber-50/60 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-3 flex items-center justify-between gap-3">
+              <p class="font-black text-slate-900 flex items-center gap-2"><i class="fa-solid fa-store text-amber-500"></i> Portada pública y precio</p>
+              <label class="flex items-center gap-2 font-bold text-slate-700 cursor-pointer select-none">
+                <input id="form-course-public" type="checkbox" class="w-4 h-4 accent-brand-600" checked> Mostrar en la portada
+              </label>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1" for="form-course-price">Precio (MXN):</label>
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                <input id="form-course-price" type="number" min="0" step="0.01" placeholder="Ej. 1200" class="w-full pl-7 pr-3 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+              </div>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-slate-800 mb-1" for="form-course-price-note">Nota del precio (opcional):</label>
+              <input id="form-course-price-note" type="text" maxlength="60" placeholder="Ej. + IVA · Precio de lanzamiento · Incluye constancia" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <p class="sm:col-span-3 text-[10px] text-slate-500 -mt-2">Deja el precio vacío para mostrar "Consultar precio" o escribe 0 para mostrar "Gratis". Los cambios se reflejan en la portada al guardar.</p>
+          </div>
+
           <div class="sm:col-span-2">
             <label class="block font-bold text-slate-800 mb-1" for="form-course-desc">Descripción General del Curso: *</label>
             <textarea id="form-course-desc" rows="2" placeholder="Resumen del contenido y metas pedagógicas..." class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
@@ -1256,6 +1497,11 @@
         <div id="selfreg-error-msg" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
           <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
           <span id="selfreg-error-text">Este correo ya está registrado.</span>
+        </div>
+
+        <div id="selfreg-pending-course" class="hidden p-3 bg-amber-50 rounded-xl border border-amber-300 text-[11px] text-amber-950 leading-relaxed">
+          <i class="fa-solid fa-cart-plus mr-1 text-amber-500"></i>
+          Al crear tu cuenta también enviaremos tu solicitud de inscripción a <b id="selfreg-pending-course-title"></b>.
         </div>
 
         <div class="p-3 bg-brand-50 rounded-xl border border-brand-100 text-[11px] text-brand-900 leading-relaxed">
@@ -1842,7 +2088,12 @@
       const today = new Date();
       const options = { year: 'numeric', month: 'long', day: 'numeric' };
       document.getElementById('cert-issue-date').textContent = `Fecha: ${today.toLocaleDateString('es-ES', options)}`;
-      navigateTo('login');
+      setupHomeStaticContent();
+      restorePendingEnrollment();
+      navigateTo('home');
+      renderHome();
+      const initialHash = (location.hash || '').replace('#', '');
+      if (['catalogo', 'precios', 'preguntas'].includes(initialHash)) setTimeout(() => goHome(initialHash), 300);
       updateAdminDashboardStats();
 
       if (!firebaseReady) {
@@ -1850,8 +2101,10 @@
         return;
       }
 
-      // Los datos ya no se cargan antes de iniciar sesión: solo la verificación
-      // pública de insignias (?verify=FOLIO) funciona sin cuenta.
+      // Los datos privados no se cargan antes de iniciar sesión. Sin cuenta solo
+      // funcionan la portada (colección pública publicCourses) y la verificación
+      // pública de insignias (?verify=FOLIO).
+      loadPublicCatalog();
       handleVerifyUrlParamIfNeeded();
     });
 
@@ -1904,7 +2157,10 @@
       listenCollection(db.collection('courses'), list => {
         coursesData = list;
         dbReady = true;
-        if (staff) backfillCourseOrderIfNeeded();
+        if (staff) {
+          backfillCourseOrderIfNeeded();
+          schedulePublicCatalogSync();
+        }
         afterDataChange();
       }, 'cursos');
 
@@ -1934,6 +2190,9 @@
     // sin importar quien la haya provocado (tu, otro administrador u otro alumno).
     function afterDataChange() {
       updateAdminDashboardStats();
+
+      const homeView = document.getElementById('view-home');
+      if (homeView && !homeView.classList.contains('hidden')) renderHome();
 
       if (isStaffUser(currentUser)) {
         const adminView = document.getElementById('view-admin-dashboard');
@@ -2200,6 +2459,13 @@
       document.getElementById('selfreg-form-name').value = '';
       document.getElementById('selfreg-form-email').value = '';
       document.getElementById('selfreg-error-msg').classList.add('hidden');
+      const pendBox = document.getElementById('selfreg-pending-course');
+      if (pendingEnrollment) {
+        document.getElementById('selfreg-pending-course-title').textContent = pendingEnrollment.title;
+        pendBox.classList.remove('hidden');
+      } else {
+        pendBox.classList.add('hidden');
+      }
       const modal = document.getElementById('modal-self-register');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -2252,7 +2518,7 @@
 
         const studentNumber = await getNextStudentNumber();
 
-        await db.collection('students').add({
+        const studentRef = await db.collection('students').add({
           uid: cred.user.uid,
           name,
           username: email,
@@ -2262,6 +2528,22 @@
           createdAt: new Date().toISOString()
         });
 
+        // Si llegó desde "Inscribirme" en la portada, la solicitud del curso se
+        // envía aquí mismo (todavía con la sesión recién creada).
+        let requestedTitle = '';
+        if (pendingEnrollment) {
+          try {
+            await createEnrollmentRequest(
+              { id: studentRef.id, uid: cred.user.uid, username: email, name },
+              pendingEnrollment.id, pendingEnrollment.title
+            );
+            requestedTitle = pendingEnrollment.title;
+            clearPendingEnrollment(false);
+          } catch (enrErr) {
+            console.error('No se pudo enviar la solicitud del curso al registrarse:', enrErr);
+          }
+        }
+
         await auth.signOut();
 
         await sendCredentialsEmail({ name, email, username: email, password });
@@ -2270,7 +2552,12 @@
         toggleLoginTab('student');
         document.getElementById('login-username').value = email;
         document.getElementById('login-password').value = '';
-        showToast(`¡Cuenta creada, ${name}! Te enviamos tu usuario y contrasena por correo. Inicia sesion y solicita el curso que necesites.`, 'success');
+        if (requestedTitle) {
+          showToast(`¡Cuenta creada, ${name}! Ya enviamos tu solicitud para "${requestedTitle}". Revisa tu correo: ahí está tu contraseña para iniciar sesión.`, 'success');
+        } else {
+          showToast(`¡Cuenta creada, ${name}! Te enviamos tu usuario y contrasena por correo. Inicia sesion y solicita el curso que necesites.`, 'success');
+        }
+        updateLoginPendingBanner();
       } catch (err) {
         console.error(err);
         errorText.textContent = 'No se pudo completar el registro: ' + err.message;
@@ -2395,6 +2682,10 @@
             currentUser = { role: 'coordinator', username: r.username || username, name: r.name || username, id: r.staffId || cred.user.uid, uid: cred.user.uid };
           }
 
+          if (pendingEnrollment) {
+            clearPendingEnrollment(false);
+            showToast('La solicitud de curso se canceló: las inscripciones se solicitan con una cuenta de alumno.', 'info');
+          }
           initFirestoreSync();
           updateHeaderSessionUI();
           navigateTo('admin-dashboard');
@@ -2427,7 +2718,8 @@
           document.getElementById('student-welcome-name').textContent = student.name;
           navigateTo('student-catalog');
           renderStudentCatalog();
-          showToast(`¡Bienvenido, ${student.name}!`, 'success');
+          const sentPending = await processPendingEnrollment(student, cred.user.uid);
+          if (!sentPending) showToast(`¡Bienvenido, ${student.name}!`, 'success');
         }
       } catch (err) {
         console.error(err);
@@ -2446,8 +2738,10 @@
       previewEnrollment = null;
       studentsDB = []; enrollmentsDB = []; studentBadgesDB = []; staffDB = []; coursesData = [];
       dbReady = false;
+      publicSyncCache = null;
       updateHeaderSessionUI();
-      navigateTo('login');
+      navigateTo('home');
+      renderHome();
       document.getElementById('login-username').value = '';
       document.getElementById('login-password').value = '';
       showToast('Has cerrado sesión correctamente.', 'info');
@@ -2455,7 +2749,7 @@
 
     function handleLogoClick() {
       if (!currentUser) {
-        navigateTo('login');
+        goHome('inicio');
       } else if (isStaffUser(currentUser)) {
         navigateTo('admin-dashboard');
       } else {
@@ -2489,11 +2783,17 @@
     }
 
     function navigateTo(viewName) {
-      const views = ['login', 'student-catalog', 'classroom', 'admin-dashboard', 'certificate', 'student-badges', 'badge-verify'];
+      const views = ['home', 'login', 'student-catalog', 'classroom', 'admin-dashboard', 'certificate', 'student-badges', 'badge-verify'];
       views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) el.classList.add('hidden');
       });
+
+      // La portada ocupa todo el ancho; el resto de vistas viven dentro de <main>.
+      const appMain = document.getElementById('app-main');
+      if (appMain) appMain.classList.toggle('hidden', viewName === 'home');
+      if (viewName !== 'home') setActiveHomeLink(null);
+      if (viewName === 'login') updateLoginPendingBanner();
 
       const target = document.getElementById(`view-${viewName}`);
       if (target) {
@@ -2507,6 +2807,469 @@
         navigateTo('admin-dashboard');
       } else {
         navigateTo('classroom');
+      }
+    }
+
+    // ==================== PORTADA PÚBLICA: CATÁLOGO, PRECIOS E INSCRIPCIÓN DIRECTA ====================
+    // La portada no puede leer la colección privada "courses" (trae exámenes con
+    // respuestas, videos, etc.). Por eso, cada vez que el personal guarda, ordena
+    // o elimina un curso, se copia una ficha pública a la colección "publicCourses"
+    // (solo título, descripción, miniatura, categoría, duración, temario y precio).
+    // Reglas necesarias en Firestore: publicCourses -> lectura pública, escritura solo staff.
+    const SITE_CONTACT = {
+      whatsapp: '525573446150',          // número para wa.me (52 + 10 dígitos)
+      whatsappLabel: '55 7344 6150',
+      email: 'slabmex@gmail.com'
+    };
+
+    let publicCourses = [];
+    let publicCatalogState = 'loading'; // 'loading' | 'ready' | 'error'
+    let homeCategoryFilter = 'all';
+    let homeSearch = '';
+    let homeCatsCache = [];
+    let pendingEnrollment = null;       // { id, title } curso elegido en la portada antes de iniciar sesión
+
+    function setupHomeStaticContent() {
+      const wa = `https://wa.me/${SITE_CONTACT.whatsapp}?text=${encodeURIComponent('Hola, me interesa una cotización de capacitación para mi empresa (Campus Virtual de SST).')}`;
+      const mail = `mailto:${SITE_CONTACT.email}?subject=${encodeURIComponent('Cotización de capacitación - Campus Virtual de SST')}`;
+      const set = (id, attr, val, text) => { const el = document.getElementById(id); if (!el) return; el.setAttribute(attr, val); if (text !== undefined) el.innerHTML = text; };
+      set('home-quote-whatsapp', 'href', wa);
+      set('home-quote-email', 'href', mail);
+      set('home-footer-email', 'href', `mailto:${SITE_CONTACT.email}`, `<i class="fa-regular fa-envelope mr-1"></i>${SITE_CONTACT.email}`);
+      set('home-footer-whatsapp', 'href', `https://wa.me/${SITE_CONTACT.whatsapp}`, `<i class="fa-brands fa-whatsapp mr-1"></i>${SITE_CONTACT.whatsappLabel}`);
+      const y = document.getElementById('home-year'); if (y) y.textContent = new Date().getFullYear();
+      setupHomeScrollSpy();
+    }
+
+    async function loadPublicCatalog() {
+      if (!firebaseReady) { publicCatalogState = 'error'; renderHome(); return; }
+      try {
+        const snap = await db.collection('publicCourses').get();
+        publicCourses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        publicCatalogState = 'ready';
+      } catch (err) {
+        console.warn('No se pudo leer el catálogo público (publicCourses):', err);
+        publicCatalogState = 'error';
+      }
+      renderHome();
+    }
+
+    // Ficha pública de un curso (lo único que se publica sin iniciar sesión).
+    function publicProjection(c) {
+      return {
+        title: c.title || '',
+        description: c.description || '',
+        category: (c.category || '').trim(),
+        instructor: c.instructor || '',
+        duration: c.duration || '',
+        thumbnailUrl: c.thumbnailUrl || '',
+        moduleCount: Array.isArray(c.modules) ? c.modules.length : (typeof c.moduleCount === 'number' ? c.moduleCount : 0),
+        moduleTitles: Array.isArray(c.modules) ? c.modules.map(m => (m && m.title) || '').slice(0, 60) : (Array.isArray(c.moduleTitles) ? c.moduleTitles : []),
+        price: (typeof c.price === 'number' && isFinite(c.price)) ? c.price : null,
+        priceNote: c.priceNote || '',
+        orderIndex: typeof c.orderIndex === 'number' ? c.orderIndex : 9999,
+        visible: c.visible === false ? false : (c.showOnHome !== false)
+      };
+    }
+
+    // Cursos que muestra la portada. Si el personal tiene sesión abierta, usa los
+    // datos en vivo; si no, la colección pública.
+    function getHomeCourses() {
+      const source = (isStaffUser(currentUser) && dbReady)
+        ? coursesData.map(c => ({ id: c.id, ...publicProjection(c) }))
+        : publicCourses.map(c => ({ id: c.id, ...publicProjection(c) }));
+      return source.filter(c => c.visible && c.title).sort((a, b) => a.orderIndex - b.orderIndex);
+    }
+
+    function formatCoursePrice(price) {
+      if (price === null || price === undefined) return { main: 'Consultar precio', isText: true };
+      if (price === 0) return { main: 'Gratis', isText: true };
+      const main = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: price % 1 ? 2 : 0 }).format(price);
+      return { main, isText: false };
+    }
+
+    function priceHtml(c, size) {
+      const p = formatCoursePrice(c.price);
+      const big = size === 'lg';
+      return `<div class="leading-tight">
+          <span class="${big ? 'text-2xl' : 'text-lg'} font-black ${p.isText ? 'text-slate-700' : 'text-slate-900'}">${p.main}</span>${p.isText ? '' : `<span class="text-[10px] font-bold text-slate-400 ml-1">MXN</span>`}
+          ${c.priceNote ? `<span class="block text-[10px] font-semibold text-slate-500">${escapeHtml(c.priceNote)}</span>` : ''}
+        </div>`;
+    }
+
+    function setHomeSearch(value) {
+      homeSearch = value;
+      renderHomeCatalog();
+    }
+
+    function setHomeCategory(key) {
+      homeCategoryFilter = key;
+      renderHomeCatalog();
+    }
+
+    function renderHome() {
+      renderHomeCollage();
+      renderHomeCatalog();
+      renderHomePricing();
+    }
+
+    function courseThumbHtml(c, extraClass) {
+      if (c.thumbnailUrl) {
+        return `<img src="${escapeHtml(c.thumbnailUrl)}" alt="" loading="lazy" class="w-full h-full object-cover ${extraClass || ''}">`;
+      }
+      return `<div class="w-full h-full bg-gradient-to-br from-[#0b1a4a] via-brand-800 to-indigo-600 flex items-center justify-center ${extraClass || ''}">
+          <i class="fa-solid ${categoryIcon(c.category)} text-4xl text-white/30"></i></div>`;
+    }
+
+    function renderHomeCollage() {
+      const box = document.getElementById('home-hero-collage');
+      if (!box) return;
+      const all = getHomeCourses();
+      const withThumb = all.filter(c => c.thumbnailUrl);
+      const picks = (withThumb.length >= 3 ? withThumb : withThumb.concat(all.filter(c => !c.thumbnailUrl))).slice(0, 3);
+      const slots = [
+        'right-0 top-0 w-[72%] --r:4deg',
+        'left-0 top-[34%] w-[62%] z-10 --r:-5deg',
+        'right-[6%] bottom-0 w-[50%] z-20 --r:3deg'
+      ];
+      if (picks.length === 0) {
+        const icons = ['fa-helmet-safety', 'fa-fire-extinguisher', 'fa-triangle-exclamation'];
+        box.innerHTML = slots.map((s, i) => {
+          const [pos, r] = s.split(' --r:');
+          return `<div class="tile home-float absolute ${pos} rounded-2xl overflow-hidden border border-white/15 bg-white/5 backdrop-blur aspect-video flex items-center justify-center" style="--r:${r}; animation-delay:${i * -2}s">
+              <i class="fa-solid ${icons[i]} text-5xl text-white/25"></i></div>`;
+        }).join('');
+        return;
+      }
+      box.innerHTML = picks.map((c, i) => {
+        const [pos, r] = slots[i].split(' --r:');
+        return `<button onclick="openPublicCourseDetail('${c.id}')" class="tile home-float absolute ${pos} rounded-2xl overflow-hidden border border-white/20 bg-slate-900 text-left group" style="--r:${r}; animation-delay:${i * -2.3}s">
+            <div class="aspect-video">${courseThumbHtml(c, 'group-hover:scale-105 transition duration-500')}</div>
+            <div class="px-3 py-2 bg-slate-950/90">
+              <p class="text-[9px] font-extrabold uppercase tracking-wider text-amber-400">${escapeHtml(c.category || 'Curso')}</p>
+              <p class="text-[11px] font-bold text-white leading-snug line-clamp-1" style="display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(c.title)}</p>
+            </div>
+          </button>`;
+      }).join('');
+    }
+
+    function buildHomeCourseCard(c) {
+      return `
+        <article class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition duration-200 overflow-hidden flex flex-col group">
+          <button onclick="openPublicCourseDetail('${c.id}')" class="relative home-thumb overflow-hidden bg-slate-100 block w-full" aria-label="Ver detalles de ${escapeHtml(c.title)}">
+            ${courseThumbHtml(c, 'group-hover:scale-[1.03] transition duration-500')}
+            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-brand-600 text-white shadow">${escapeHtml(c.category || 'Curso')}</span>
+          </button>
+          <div class="p-5 flex-1 flex flex-col">
+            <h3 class="font-extrabold text-slate-900 text-[15px] leading-snug line-clamp-3">
+              <button onclick="openPublicCourseDetail('${c.id}')" class="text-left hover:text-brand-700 transition">${escapeHtml(c.title)}</button>
+            </h3>
+            <p class="text-xs text-slate-500 leading-relaxed mt-2 line-clamp-3">${escapeHtml(c.description)}</p>
+            <div class="flex items-center gap-4 text-xs text-slate-600 mt-auto pt-4">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-brand-600"></i> ${c.moduleCount} ${c.moduleCount === 1 ? 'Módulo' : 'Módulos'}</span>
+              ${c.duration ? `<span class="flex items-center gap-1.5"><i class="fa-regular fa-clock text-amber-500"></i> ${escapeHtml(c.duration)}</span>` : ''}
+            </div>
+            <div class="flex items-end justify-between gap-3 pt-4 mt-4 border-t border-slate-100">
+              ${priceHtml(c)}
+              <button onclick="publicEnroll('${c.id}')" class="flex-shrink-0 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs shadow-sm transition flex items-center gap-1.5">
+                Inscribirme <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function homeEmptyState(icon, title, text, extra) {
+      return `<div class="col-span-full py-14 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-300">
+          <i class="fa-solid ${icon} text-4xl text-slate-300 mb-3"></i>
+          <h3 class="text-sm font-bold text-slate-700">${title}</h3>
+          ${text ? `<p class="text-xs text-slate-500 mt-1">${text}</p>` : ''}${extra || ''}
+        </div>`;
+    }
+
+    function renderHomeCatalog() {
+      const grid = document.getElementById('home-courses-grid');
+      const chips = document.getElementById('home-category-chips');
+      const counter = document.getElementById('home-catalog-counter');
+      if (!grid) return;
+
+      if (publicCatalogState === 'loading' && !(isStaffUser(currentUser) && dbReady)) {
+        chips.innerHTML = '';
+        counter.textContent = 'Cargando cursos…';
+        grid.innerHTML = [0, 1, 2].map(() => `<div class="rounded-2xl border border-slate-200 overflow-hidden animate-pulse"><div class="home-thumb bg-slate-200"></div><div class="p-5 space-y-3"><div class="h-4 bg-slate-200 rounded w-4/5"></div><div class="h-3 bg-slate-100 rounded"></div><div class="h-3 bg-slate-100 rounded w-2/3"></div></div></div>`).join('');
+        return;
+      }
+
+      const all = getHomeCourses();
+      if (all.length === 0) {
+        chips.innerHTML = '';
+        counter.textContent = '';
+        grid.innerHTML = publicCatalogState === 'error' && !(isStaffUser(currentUser) && dbReady)
+          ? homeEmptyState('fa-cloud', 'No pudimos cargar el catálogo en este momento', 'Intenta de nuevo en unos minutos o inicia sesión para ver tus cursos.')
+          : homeEmptyState('fa-graduation-cap', 'Muy pronto publicaremos nuevos cursos', '');
+        return;
+      }
+
+      counter.textContent = `${all.length} ${all.length === 1 ? 'curso disponible' : 'cursos disponibles'} · Inscríbete en línea`;
+
+      const cats = getStudentCategories(all);
+      homeCatsCache = cats;
+      if (homeCategoryFilter !== 'all' && !cats.some(c => c.key === homeCategoryFilter)) homeCategoryFilter = 'all';
+      const chipClass = active => active
+        ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+        : 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:text-brand-700';
+      chips.innerHTML = [
+        `<button onclick="setHomeCategory('all')" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition flex items-center gap-1.5 ${chipClass(homeCategoryFilter === 'all')}"><i class="fa-solid fa-border-all"></i> Todos <span class="opacity-70">(${all.length})</span></button>`,
+        ...cats.map((c, i) => `<button onclick="setHomeCategory(homeCatsCache[${i}].key)" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition flex items-center gap-1.5 ${chipClass(homeCategoryFilter === c.key)}"><i class="fa-solid ${categoryIcon(c.label)}"></i> ${escapeHtml(c.label)} <span class="opacity-70">(${c.count})</span></button>`)
+      ].join('');
+
+      const q = normalizeText(homeSearch);
+      const filtered = all.filter(c =>
+        (homeCategoryFilter === 'all' || categoryKey(c) === homeCategoryFilter) &&
+        (!q || normalizeText([c.title, c.description, c.category, c.instructor, (c.moduleTitles || []).join(' ')].join(' ')).includes(q))
+      );
+
+      grid.innerHTML = filtered.length
+        ? filtered.map(buildHomeCourseCard).join('')
+        : homeEmptyState('fa-magnifying-glass', 'No encontramos cursos con ese criterio', 'Prueba con otra palabra o con el número de la norma.',
+            `<button onclick="document.getElementById('home-course-search').value=''; homeSearch=''; setHomeCategory('all');" class="mt-4 text-xs font-bold text-brand-600 hover:underline">Ver todos los cursos</button>`);
+    }
+
+    function renderHomePricing() {
+      const list = document.getElementById('home-pricing-list');
+      if (!list) return;
+      const all = getHomeCourses();
+      if (all.length === 0) {
+        list.innerHTML = `<p class="p-6 text-sm text-slate-500 text-center">${publicCatalogState === 'loading' ? 'Cargando precios…' : 'Los precios se publicarán junto con los cursos.'}</p>`;
+        return;
+      }
+      list.innerHTML = all.map(c => `
+        <div class="flex items-center gap-4 p-4 sm:px-5 hover:bg-slate-50/80 transition">
+          <button onclick="openPublicCourseDetail('${c.id}')" class="hidden sm:block w-24 flex-shrink-0 home-thumb rounded-lg overflow-hidden bg-slate-100">${courseThumbHtml(c)}</button>
+          <div class="flex-1 min-w-0">
+            <button onclick="openPublicCourseDetail('${c.id}')" class="text-left font-bold text-sm text-slate-900 hover:text-brand-700 leading-snug">${escapeHtml(c.title)}</button>
+            <p class="text-[11px] text-slate-500 mt-0.5">${escapeHtml(c.category || 'Curso')}${c.duration ? ' · ' + escapeHtml(c.duration) : ''} · ${c.moduleCount} ${c.moduleCount === 1 ? 'módulo' : 'módulos'}</p>
+          </div>
+          <div class="text-right flex-shrink-0">${priceHtml(c)}</div>
+          <button onclick="publicEnroll('${c.id}')" title="Inscribirme" class="flex-shrink-0 w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs transition flex items-center justify-center gap-1.5">
+            <span class="hidden sm:inline">Inscribirme</span> <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>`).join('');
+    }
+
+    function openPublicCourseDetail(courseId) {
+      const c = getHomeCourses().find(x => x.id === courseId);
+      if (!c) return;
+      const titles = (c.moduleTitles || []).filter(Boolean);
+      document.getElementById('modal-public-course-body').innerHTML = `
+        <div class="relative home-thumb bg-slate-100">
+          ${courseThumbHtml(c)}
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent"></div>
+          <button onclick="closePublicCourseDetail()" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-700 flex items-center justify-center shadow" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+          <div class="absolute bottom-4 left-5 right-5">
+            <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-brand-600 text-white">${escapeHtml(c.category || 'Curso')}</span>
+            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight mt-2">${escapeHtml(c.title)}</h3>
+          </div>
+        </div>
+        <div class="p-5 sm:p-7 space-y-5">
+          <div class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-600">
+            ${c.instructor ? `<span class="flex items-center gap-1.5"><i class="fa-solid fa-chalkboard-user text-brand-600"></i> ${escapeHtml(c.instructor)}</span>` : ''}
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-brand-600"></i> ${c.moduleCount} ${c.moduleCount === 1 ? 'módulo' : 'módulos'}</span>
+            ${c.duration ? `<span class="flex items-center gap-1.5"><i class="fa-regular fa-clock text-amber-500"></i> ${escapeHtml(c.duration)}</span>` : ''}
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-certificate text-amber-500"></i> Constancia con código de verificación</span>
+          </div>
+          <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(c.description)}</p>
+          ${titles.length ? `
+            <div>
+              <p class="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-500 mb-2">Temario</p>
+              <ol class="space-y-1.5">
+                ${titles.map((t, i) => `<li class="flex gap-3 text-xs text-slate-700"><span class="w-6 h-6 flex-shrink-0 rounded-full bg-brand-50 text-brand-700 font-bold flex items-center justify-center text-[11px]">${i + 1}</span><span class="pt-1">${escapeHtml(t)}</span></li>`).join('')}
+              </ol>
+            </div>` : ''}
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            ${priceHtml(c, 'lg')}
+            <button onclick="closePublicCourseDetail(); publicEnroll('${c.id}')" class="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-sm shadow-sm transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> Solicitar inscripción
+            </button>
+          </div>
+        </div>`;
+      const modal = document.getElementById('modal-public-course');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePublicCourseDetail() {
+      const modal = document.getElementById('modal-public-course');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // ---- Inscripción directa desde la portada ----
+    function savePendingEnrollment() {
+      try {
+        if (pendingEnrollment) sessionStorage.setItem('campusPendingEnrollment', JSON.stringify(pendingEnrollment));
+        else sessionStorage.removeItem('campusPendingEnrollment');
+      } catch (e) {}
+    }
+
+    function restorePendingEnrollment() {
+      try {
+        const raw = sessionStorage.getItem('campusPendingEnrollment');
+        if (raw) pendingEnrollment = JSON.parse(raw);
+      } catch (e) { pendingEnrollment = null; }
+    }
+
+    function clearPendingEnrollment(notify) {
+      pendingEnrollment = null;
+      savePendingEnrollment();
+      updateLoginPendingBanner();
+      if (notify) showToast('Solicitud cancelada. Puedes elegir otro curso en el catálogo.', 'info');
+    }
+
+    function updateLoginPendingBanner() {
+      const box = document.getElementById('login-pending-course');
+      if (!box) return;
+      if (pendingEnrollment) {
+        document.getElementById('login-pending-course-title').textContent = pendingEnrollment.title;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    async function publicEnroll(courseId) {
+      const c = getHomeCourses().find(x => x.id === courseId);
+      if (!c) return;
+
+      if (isStaffUser(currentUser)) {
+        showToast('Tienes la sesión de administración abierta. Para solicitar un curso, inicia sesión con una cuenta de alumno.', 'info');
+        return;
+      }
+
+      if (currentUser && currentUser.role === 'student') {
+        const existing = enrollmentsDB.find(e => e.studentId === currentUser.id && e.courseId === courseId);
+        navigateTo('student-catalog');
+        renderStudentCatalog();
+        if (existing) {
+          showToast(existing.status === 'approved' ? `Ya tienes acceso a "${c.title}".` : `Ya tienes una solicitud registrada para "${c.title}".`, 'info');
+          return;
+        }
+        try {
+          await createEnrollmentRequest(currentUser, courseId, c.title);
+          showToast(`¡Solicitud enviada para "${c.title}"! Te avisaremos cuando se autorice tu acceso.`, 'success');
+        } catch (err) {
+          showToast('No se pudo enviar la solicitud: ' + err.message, 'error');
+        }
+        return;
+      }
+
+      // Sin sesión: se recuerda el curso y se manda a iniciar sesión / crear cuenta.
+      pendingEnrollment = { id: courseId, title: c.title };
+      savePendingEnrollment();
+      toggleLoginTab('student');
+      navigateTo('login');
+    }
+
+    // Se llama justo después de que un alumno inicia sesión.
+    async function processPendingEnrollment(student, uid) {
+      if (!pendingEnrollment) return false;
+      const pend = pendingEnrollment;
+      clearPendingEnrollment(false);
+      try {
+        const existing = await db.collection('enrollments')
+          .where('studentUid', '==', uid)
+          .where('courseId', '==', pend.id)
+          .limit(1).get();
+        if (!existing.empty) {
+          const st = existing.docs[0].data().status;
+          showToast(st === 'approved' ? `¡Bienvenido, ${student.name}! Ya tienes acceso a "${pend.title}".` : `¡Bienvenido, ${student.name}! Ya tenías una solicitud para "${pend.title}".`, 'info');
+          return true;
+        }
+        await createEnrollmentRequest({ id: student.id, uid, username: student.username, name: student.name }, pend.id, pend.title);
+        showToast(`¡Bienvenido, ${student.name}! Tu solicitud para "${pend.title}" fue enviada. Te avisaremos cuando se autorice.`, 'success');
+        return true;
+      } catch (err) {
+        console.error(err);
+        showToast('Iniciaste sesión, pero no se pudo enviar la solicitud del curso: ' + err.message + '. Puedes solicitarlo desde tu catálogo.', 'error');
+        return true;
+      }
+    }
+
+    // ---- Navegación dentro de la portada ----
+    function goHome(section) {
+      const homeView = document.getElementById('view-home');
+      const wasHidden = homeView.classList.contains('hidden');
+      if (wasHidden) {
+        navigateTo('home');
+        renderHome();
+      }
+      const target = document.getElementById(`home-${section || 'inicio'}`);
+      if (target) {
+        setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), wasHidden ? 60 : 0);
+      }
+      setActiveHomeLink(section || 'inicio');
+    }
+
+    function setActiveHomeLink(section) {
+      document.querySelectorAll('[data-home-link]').forEach(b => {
+        const on = b.getAttribute('data-home-link') === section;
+        b.classList.toggle('text-brand-700', on);
+        b.classList.toggle('bg-brand-50', on);
+      });
+    }
+
+    function setupHomeScrollSpy() {
+      if (!('IntersectionObserver' in window)) return;
+      const io = new IntersectionObserver(entries => {
+        if (document.getElementById('view-home').classList.contains('hidden')) return;
+        entries.forEach(en => { if (en.isIntersecting) setActiveHomeLink(en.target.id.replace('home-', '')); });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      ['inicio', 'catalogo', 'precios', 'preguntas'].forEach(s => { const el = document.getElementById(`home-${s}`); if (el) io.observe(el); });
+    }
+
+    // ---- Sincronización courses -> publicCourses (la hace el personal) ----
+    let publicSyncTimer = null;
+    let publicSyncCache = null;   // Map id -> JSON de la última ficha publicada
+    let publicSyncWarned = false;
+
+    function schedulePublicCatalogSync() {
+      clearTimeout(publicSyncTimer);
+      publicSyncTimer = setTimeout(syncPublicCatalog, 1500);
+    }
+
+    async function syncPublicCatalog() {
+      if (!isStaffUser(currentUser) || !dbReady) return;
+      try {
+        if (!publicSyncCache) {
+          const snap = await db.collection('publicCourses').get();
+          publicSyncCache = new Map(snap.docs.map(d => [d.id, JSON.stringify(publicProjection(d.data()))]));
+        }
+        const batch = db.batch();
+        let ops = 0;
+        const next = new Map();
+        coursesData.forEach(c => {
+          const proj = publicProjection(c);
+          const json = JSON.stringify(proj);
+          next.set(c.id, json);
+          if (publicSyncCache.get(c.id) !== json) {
+            batch.set(db.collection('publicCourses').doc(c.id), { ...proj, updatedAt: new Date().toISOString() });
+            ops++;
+          }
+        });
+        publicSyncCache.forEach((_, id) => {
+          if (!next.has(id)) { batch.delete(db.collection('publicCourses').doc(id)); ops++; }
+        });
+        if (ops > 0) await batch.commit();
+        publicSyncCache = next;
+        publicCourses = coursesData.map(c => ({ id: c.id, ...publicProjection(c) }));
+        publicCatalogState = 'ready';
+      } catch (err) {
+        console.error('No se pudo actualizar la portada pública (publicCourses):', err);
+        publicSyncCache = null;
+        if (!publicSyncWarned) {
+          publicSyncWarned = true;
+          showToast('No se pudo actualizar la portada pública. Revisa que las reglas de Firestore permitan al personal escribir en "publicCourses".', 'error');
+        }
       }
     }
 
@@ -2736,28 +3499,41 @@
       }
     }
 
-    async function alertarNuevaInscripcion(nombreAlumno, nombreCurso) { const telefono = '5215573446150'; const apikey = '9610624'; const mensaje = encodeURIComponent('Nueva inscripcion por autorizar: ' + nombreAlumno + ' - Curso: ' + nombreCurso); fetch('https://api.callmebot.com/whatsapp.php?phone=' + telefono + '&text=' + mensaje + '&apikey=' + apikey).catch(function(err){ console.error('Error WhatsApp:', err); }); } async function requestEnrollment(courseId) {
+    async function alertarNuevaInscripcion(nombreAlumno, nombreCurso) { const telefono = '5215573446150'; const apikey = '9610624'; const mensaje = encodeURIComponent('Nueva inscripcion por autorizar: ' + nombreAlumno + ' - Curso: ' + nombreCurso); fetch('https://api.callmebot.com/whatsapp.php?phone=' + telefono + '&text=' + mensaje + '&apikey=' + apikey).catch(function(err){ console.error('Error WhatsApp:', err); }); }
+
+    // Crea la solicitud (status 'pending') y avisa por WhatsApp. La usan el
+    // catálogo del alumno, la portada pública y el auto-registro.
+    async function createEnrollmentRequest(student, courseId, courseTitle) {
+      await db.collection('enrollments').add({
+        studentId: student.id,
+        studentUid: student.uid,
+        studentUsername: student.username,
+        studentName: student.name,
+        courseId,
+        status: 'pending',
+        requestDate: new Date().toLocaleDateString('es-ES'),
+        requestedAt: new Date().toISOString(),
+        completedModules: [],
+        examScore: null,
+        passed: false,
+        certCode: null,
+        certDate: null
+      });
+      alertarNuevaInscripcion(student.name, courseTitle);
+    }
+
+    async function requestEnrollment(courseId) {
       if (!currentUser || currentUser.role !== 'student') return;
 
       const course = coursesData.find(c => c.id === courseId);
       if (!course) return;
+      if (enrollmentsDB.some(e => e.studentId === currentUser.id && e.courseId === courseId)) {
+        showToast(`Ya tienes una solicitud registrada para "${course.title}".`, 'info');
+        return;
+      }
 
       try {
-        alertarNuevaInscripcion(currentUser.name, course.title); await db.collection('enrollments').add({
-          studentId: currentUser.id,
-          studentUid: currentUser.uid,
-          studentUsername: currentUser.username,
-          studentName: currentUser.name,
-          courseId: course.id,
-          status: 'pending',
-          requestDate: new Date().toLocaleDateString('es-ES'),
-          requestedAt: new Date().toISOString(),
-          completedModules: [],
-          examScore: null,
-          passed: false,
-          certCode: null,
-          certDate: null
-        });
+        await createEnrollmentRequest(currentUser, course.id, course.title);
         showToast(`¡Solicitud enviada para "${course.title}"! El administrador debe autorizar tu acceso.`, 'info');
       } catch (err) {
         showToast('No se pudo enviar la solicitud: ' + err.message, 'error');
@@ -4065,6 +4841,9 @@
       document.getElementById('form-course-passing').value = 80;
       document.getElementById('form-course-desc').value = '';
       document.getElementById('form-course-drive').value = '';
+      document.getElementById('form-course-price').value = '';
+      document.getElementById('form-course-price-note').value = '';
+      document.getElementById('form-course-public').checked = true;
 
       tempFormThumbnail = '';
       document.getElementById('form-course-thumb-input').value = '';
@@ -4110,6 +4889,9 @@
       document.getElementById('form-course-passing').value = course.passingScore;
       document.getElementById('form-course-desc').value = course.description;
       document.getElementById('form-course-drive').value = course.driveUrl || '';
+      document.getElementById('form-course-price').value = (typeof course.price === 'number') ? course.price : '';
+      document.getElementById('form-course-price-note').value = course.priceNote || '';
+      document.getElementById('form-course-public').checked = course.showOnHome !== false;
 
       tempFormThumbnail = course.thumbnailUrl || '';
       document.getElementById('form-course-thumb-input').value = '';
@@ -4360,6 +5142,15 @@
       const passingScore = parseInt(document.getElementById('form-course-passing').value, 10) || 80;
       const description = document.getElementById('form-course-desc').value.trim();
       const driveUrl = document.getElementById('form-course-drive').value.trim();
+      const priceRaw = document.getElementById('form-course-price').value.trim();
+      const price = priceRaw === '' ? null : Math.max(0, Math.round(parseFloat(priceRaw) * 100) / 100);
+      const priceNote = document.getElementById('form-course-price-note').value.trim();
+      const showOnHome = document.getElementById('form-course-public').checked;
+
+      if (priceRaw !== '' && !isFinite(price)) {
+        showToast('El precio debe ser un número (ej. 1200).', 'error');
+        return;
+      }
 
       if (!title || !instructor) {
         showToast('El título y el instructor son campos obligatorios.', 'error');
@@ -4395,6 +5186,9 @@
         description: description || 'Sin descripción.',
         driveUrl: driveUrl || '',
         thumbnailUrl: tempFormThumbnail || '',
+        price,
+        priceNote,
+        showOnHome,
         modules: tempFormModules,
         questions: tempFormQuestions
       };
