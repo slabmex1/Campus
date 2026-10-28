@@ -128,6 +128,10 @@
     .home-faq details[open] .faq-icon { transform: rotate(45deg); }
     @keyframes homeFloat { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-8px) rotate(var(--r,0deg)); } }
     .home-float { animation: homeFloat 7s ease-in-out infinite; }
+    /* ===== Pantalla de acceso ===== */
+    .login-photo-img { background: url('assets/acceso-sst.jpg') center top / cover no-repeat;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%), linear-gradient(180deg, #000 70%, transparent 100%);
+      -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%), linear-gradient(180deg, #000 70%, transparent 100%); mask-composite: intersect; }
     @media (prefers-reduced-motion: reduce) { .home-float { animation: none; } html { scroll-behavior: auto; } }
   </style>
 </head>
@@ -306,28 +310,7 @@
       <div class="lg:col-span-7">
         <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Dudas comunes</p>
         <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1">Preguntas <span class="text-brand-600">frecuentes</span></h2>
-        <div class="home-faq mt-7 space-y-3">
-          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
-            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Cuánto tiempo tengo para terminar un curso?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
-            <p class="text-xs text-slate-600 leading-relaxed mt-3">Avanzas a tu propio ritmo. Una vez autorizado tu acceso, puedes entrar a los módulos las veces que necesites desde cualquier dispositivo.</p>
-          </details>
-          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
-            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Cuándo se autoriza mi inscripción?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
-            <p class="text-xs text-slate-600 leading-relaxed mt-3">Al enviar tu solicitud, nuestro equipo recibe un aviso inmediato. Te contactamos para confirmar los detalles y, en cuanto se autoriza, el curso aparece desbloqueado en tu cuenta.</p>
-          </details>
-          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
-            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Qué constancia recibo?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
-            <p class="text-xs text-slate-600 leading-relaxed mt-3">Al aprobar la evaluación final obtienes una constancia de capacitación con código de verificación, que cualquier persona puede validar.</p>
-          </details>
-          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
-            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">Ya tengo cuenta, ¿cómo pido otro curso?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
-            <p class="text-xs text-slate-600 leading-relaxed mt-3">Da clic en <b>Inscribirme</b> en el curso que te interese e inicia sesión con tu usuario; la solicitud se envía automáticamente. También puedes pedirlo desde tu aula virtual.</p>
-          </details>
-          <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
-            <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">¿Pueden capacitar a todo mi equipo?<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
-            <p class="text-xs text-slate-600 leading-relaxed mt-3">Sí. Escríbenos desde la sección de precios y te enviamos una cotización por grupo.</p>
-          </details>
-        </div>
+        <div id="home-faq-list" class="home-faq mt-7 space-y-3"></div>
       </div>
     </section>
 
@@ -363,99 +346,121 @@
     </footer>
   </div>
 
+  <!-- ==================== VISTA 0: PANTALLA DE ACCESO (PANTALLA COMPLETA) ==================== -->
+  <section id="view-login" class="hidden flex-1 home-hero relative overflow-hidden text-white animate-fade">
+    <div class="home-grid-dots absolute inset-0 pointer-events-none"></div>
+    <!-- Foto central (solo escritorio) -->
+    <div class="login-photo hidden lg:block absolute inset-y-0 left-[34%] w-[30%] pointer-events-none" aria-hidden="true">
+      <div class="absolute inset-0 login-photo-img"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 grid lg:grid-cols-12 gap-8 lg:gap-6 items-center min-h-[calc(100vh-4rem)]">
+      <!-- Texto y beneficios -->
+      <div class="lg:col-span-4 space-y-6">
+        <button onclick="goHome('catalogo')" class="text-xs font-bold text-slate-300 hover:text-amber-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-left"></i> Volver al catálogo de cursos
+        </button>
+        <span class="inline-flex items-center gap-2 px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-white/10 text-amber-300 border border-white/15 rounded-full">
+          <i class="fa-solid fa-helmet-safety"></i> Academia de Seguridad y Salud en el Trabajo
+        </span>
+        <h1 class="text-4xl sm:text-5xl font-black tracking-tight leading-[1.02]">
+          Tu formación <span class="sm:block">en SST</span> <span class="block text-amber-400">en un solo lugar</span>
+        </h1>
+        <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+          Accede a tus cursos, materiales, evaluaciones y constancias desde cualquier dispositivo, de forma segura y sencilla.
+        </p>
+        <ul class="hidden sm:grid gap-4">
+          <li class="flex items-center gap-4"><span class="w-12 h-12 flex-shrink-0 rounded-full bg-brand-600 ring-4 ring-brand-500/25 flex items-center justify-center"><i class="fa-solid fa-play"></i></span><div><p class="font-bold text-sm">Clases en línea a tu ritmo</p><p class="text-xs text-slate-300">Aprende cuando y donde quieras.</p></div></li>
+          <li class="flex items-center gap-4"><span class="w-12 h-12 flex-shrink-0 rounded-full bg-brand-600 ring-4 ring-brand-500/25 flex items-center justify-center"><i class="fa-solid fa-file-lines"></i></span><div><p class="font-bold text-sm">Materiales didácticos descargables</p><p class="text-xs text-slate-300">Todo el contenido siempre disponible.</p></div></li>
+          <li class="flex items-center gap-4"><span class="w-12 h-12 flex-shrink-0 rounded-full bg-brand-600 ring-4 ring-brand-500/25 flex items-center justify-center"><i class="fa-solid fa-list-check"></i></span><div><p class="font-bold text-sm">Evaluaciones y constancias</p><p class="text-xs text-slate-300">Con código de verificación.</p></div></li>
+          <li class="flex items-center gap-4"><span class="w-12 h-12 flex-shrink-0 rounded-full bg-brand-600 ring-4 ring-brand-500/25 flex items-center justify-center"><i class="fa-solid fa-laptop"></i></span><div><p class="font-bold text-sm">Acceso desde cualquier dispositivo</p><p class="text-xs text-slate-300">Computadora, tablet o celular.</p></div></li>
+        </ul>
+      </div>
+
+      <!-- Tarjeta de acceso -->
+      <div class="lg:col-start-8 lg:col-span-5 w-full max-w-md mx-auto lg:max-w-none space-y-4">
+        <div id="login-pending-course" class="hidden p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 shadow-lg">
+          <div class="flex gap-3">
+            <i class="fa-solid fa-cart-plus text-amber-500 text-lg mt-0.5"></i>
+            <div class="space-y-1.5 flex-1">
+              <p class="font-bold text-sm leading-snug">Solicitud de inscripción a: <span id="login-pending-course-title" class="text-brand-700"></span></p>
+              <p class="text-amber-900/80 leading-relaxed">Inicia sesión y tu solicitud se enviará automáticamente. ¿Aún no tienes cuenta? <button type="button" onclick="openSelfRegisterModal()" class="font-extrabold text-brand-700 underline underline-offset-2">Créala aquí</button>.</p>
+              <button type="button" onclick="clearPendingEnrollment(true)" class="text-[11px] font-semibold text-amber-800/70 hover:text-amber-900">Cancelar esta solicitud</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white text-slate-800 rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
+          <div class="bg-gradient-to-br from-[#0b1a4a] via-[#16247a] to-brand-700 p-7 sm:p-8 text-center relative overflow-hidden">
+            <div class="relative z-10 space-y-2">
+              <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl text-white">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Acceso a la Plataforma</h2>
+              <p class="text-xs sm:text-sm text-indigo-100">Ingresa con tus credenciales asignadas para acceder a tus módulos y certificaciones.</p>
+            </div>
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-brand-400/25 rounded-full blur-2xl pointer-events-none"></div>
+          </div>
+
+          <div class="p-6 sm:p-8 space-y-5">
+            <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-sm font-bold">
+              <button id="tab-login-student" onclick="toggleLoginTab('student')" class="py-2.5 rounded-xl bg-white text-brand-700 shadow-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-user-graduate"></i> Estudiante
+              </button>
+              <button id="tab-login-admin" onclick="toggleLoginTab('admin')" class="py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-screwdriver-wrench"></i> Administrador
+              </button>
+            </div>
+
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-sm">
+              <div>
+                <label id="login-username-label" class="block font-bold text-slate-800 mb-1.5" for="login-username">Correo o Usuario de Alumno:</label>
+                <div class="relative">
+                  <i class="fa-regular fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <input id="login-username" type="text" required autocomplete="username" placeholder="tu.correo@ejemplo.com" class="w-full pl-11 pr-3 py-3 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block font-bold text-slate-800" for="login-password">Contraseña:</label>
+                  <button type="button" id="login-forgot-link" onclick="handleForgotPassword()" class="text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline">¿Olvidaste tu contraseña?</button>
+                  <span id="login-hint-role" class="hidden"></span>
+                </div>
+                <div class="relative">
+                  <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <input id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••" class="w-full pl-11 pr-11 py-3 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+                  <button type="button" onclick="toggleLoginPasswordVisibility(this)" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700" aria-label="Mostrar contraseña"><i class="fa-regular fa-eye"></i></button>
+                </div>
+              </div>
+
+              <div id="login-error-msg" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
+                <span id="login-error-text">Credenciales incorrectas.</span>
+              </div>
+
+              <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-base">
+                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+              </button>
+            </form>
+
+            <div id="link-self-register-wrap" class="text-center pt-3 border-t border-slate-100">
+              <button type="button" onclick="openSelfRegisterModal()" class="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline">
+                <i class="fa-solid fa-user-plus mr-1"></i> ¿Eres nuevo participante? Regístrate aquí
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ==================== MODAL: DETALLE PÚBLICO DEL CURSO ==================== -->
   <div id="modal-public-course" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4" onclick="if(event.target===this) closePublicCourseDetail()">
     <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar" id="modal-public-course-body"></div>
   </div>
 
   <main id="app-main" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-
-    <!-- ==================== VISTA 0: PANTALLA DE ACCESO / LOGIN OBLIGATORIO ==================== -->
-    <section id="view-login" class="hidden py-6 sm:py-12 animate-fade">
-      <div class="max-w-md mx-auto mb-4">
-        <button onclick="goHome('catalogo')" class="text-xs font-bold text-slate-500 hover:text-brand-700 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-arrow-left"></i> Volver al catálogo de cursos
-        </button>
-      </div>
-      <div id="login-pending-course" class="hidden max-w-md mx-auto mb-4 p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950">
-        <div class="flex gap-3">
-          <i class="fa-solid fa-cart-plus text-amber-500 text-lg mt-0.5"></i>
-          <div class="space-y-1.5 flex-1">
-            <p class="font-bold text-sm leading-snug">Solicitud de inscripción a: <span id="login-pending-course-title" class="text-brand-700"></span></p>
-            <p class="text-amber-900/80 leading-relaxed">Inicia sesión y tu solicitud se enviará automáticamente. ¿Aún no tienes cuenta? <button type="button" onclick="openSelfRegisterModal()" class="font-extrabold text-brand-700 underline underline-offset-2">Créala aquí</button>.</p>
-            <button type="button" onclick="clearPendingEnrollment(true)" class="text-[11px] font-semibold text-amber-800/70 hover:text-amber-900">Cancelar esta solicitud</button>
-          </div>
-        </div>
-      </div>
-      <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
-        
-        <!-- Header decorativo del formulario -->
-        <div class="bg-gradient-to-tr from-slate-900 via-brand-950 to-indigo-900 text-white p-8 text-center relative overflow-hidden">
-          <div class="relative z-10 space-y-2">
-            <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-2xl shadow-inner text-brand-300">
-              <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <h2 class="text-2xl font-black tracking-tight">Acceso a la Plataforma</h2>
-            <p class="text-xs text-indigo-200">Ingresa con tus credenciales asignadas para acceder a tus módulos y certificaciones.</p>
-          </div>
-          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-brand-500/20 rounded-full blur-2xl pointer-events-none"></div>
-        </div>
-
-        <!-- Selector de Rol para el Login -->
-        <div class="p-6 sm:p-8 space-y-6">
-          <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
-            <button id="tab-login-student" onclick="toggleLoginTab('student')" class="py-2.5 rounded-xl bg-white text-brand-700 shadow-sm transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-user-graduate"></i> Estudiante
-            </button>
-            <button id="tab-login-admin" onclick="toggleLoginTab('admin')" class="py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-screwdriver-wrench"></i> Administrador
-            </button>
-          </div>
-
-          <!-- Formulario de Inicio de Sesión -->
-          <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-xs">
-            <div>
-              <label id="login-username-label" class="block font-bold text-slate-700 mb-1" for="login-username">
-                Correo o Usuario de Alumno:
-              </label>
-              <div class="relative">
-                <i class="fa-regular fa-user absolute left-3.5 top-3 text-slate-400"></i>
-                <input id="login-username" type="text" required placeholder="alumno@campusvirtualsst.com" class="w-full pl-10 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
-              </div>
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="block font-bold text-slate-700" for="login-password">
-                  Contraseña:
-                </label>
-                <span id="login-hint-role" class="text-[10px] text-slate-400">Asignada por el Administrador</span>
-              </div>
-              <div class="relative">
-                <i class="fa-solid fa-key absolute left-3.5 top-3 text-slate-400"></i>
-                <input id="login-password" type="password" required placeholder="••••••••" class="w-full pl-10 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
-              </div>
-            </div>
-
-            <div id="login-error-msg" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
-              <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
-              <span id="login-error-text">Credenciales incorrectas.</span>
-            </div>
-
-            <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-xl shadow-md shadow-brand-500/25 transition flex items-center justify-center gap-2 text-sm">
-              <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
-            </button>
-          </form>
-
-          <div id="link-self-register-wrap" class="text-center pt-1">
-            <button type="button" onclick="openSelfRegisterModal()" class="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline">
-              <i class="fa-solid fa-user-plus mr-1"></i> ¿Eres nuevo participante? Regístrate aquí
-            </button>
-          </div>
-
-        </div>
-      </div>
-    </section>
 
     <!-- ==================== VISTA 1: CATÁLOGO DE CURSOS (ESTUDIANTE) ==================== -->
     <section id="view-student-catalog" class="hidden space-y-8 animate-fade">
@@ -875,6 +880,9 @@
           <button id="admin-tab-btn-badges" onclick="switchAdminTab('badges')" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
             <i class="fa-solid fa-medal"></i> Insignias y Rutas
           </button>
+          <button id="admin-tab-btn-faq" onclick="switchAdminTab('faq')" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+            <i class="fa-solid fa-circle-question"></i> Preguntas Frecuentes
+          </button>
           <button id="admin-tab-btn-staff" onclick="switchAdminTab('staff')" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
             <i class="fa-solid fa-user-shield"></i> Colaboradores
           </button>
@@ -900,6 +908,7 @@
                   <th class="p-4">Módulos</th>
                   <th class="p-4">Preguntas Examen</th>
                   <th class="p-4">Calificación Mín.</th>
+                  <th class="p-4">Portada / Precio</th>
                   <th class="p-4 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -908,6 +917,22 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- TAB: PREGUNTAS FRECUENTES DE LA PORTADA -->
+        <div id="admin-tab-faq" class="hidden p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="font-black text-slate-900 text-base">Preguntas Frecuentes de la Portada</h2>
+              <p class="text-xs text-slate-500">Edita las preguntas y respuestas que ven los visitantes en la sección "Preguntas frecuentes" de la página principal.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="faq-dirty-flag" class="hidden text-[11px] font-bold text-amber-600"><i class="fa-solid fa-circle text-[7px] mr-1"></i>Cambios sin guardar</span>
+              <button onclick="addFaqItem()" class="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl border border-brand-200 transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Agregar pregunta</button>
+              <button id="btn-save-faq" onclick="saveFaq()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
+            </div>
+          </div>
+          <div id="admin-faq-list" class="space-y-3"></div>
         </div>
 
         <!-- TAB 2: AUTORIZACIÓN DE INSCRIPCIONES -->
@@ -2609,7 +2634,7 @@
         btnAdmin.className = "py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-2 font-bold";
         labelUser.textContent = "Correo o Usuario de Alumno:";
         hintRole.textContent = "Asignada por el Administrador";
-        userInput.placeholder = "carlos o carlos@campusvirtualsst.com";
+        userInput.placeholder = "tu.correo@ejemplo.com";
         const regLinkS = document.getElementById('link-self-register-wrap');
         if (regLinkS) regLinkS.classList.remove('hidden');
       } else {
@@ -2621,6 +2646,24 @@
         const regLinkA = document.getElementById('link-self-register-wrap');
         if (regLinkA) regLinkA.classList.add('hidden');
       }
+    }
+
+    function toggleLoginPasswordVisibility(btn) {
+      const input = document.getElementById('login-password');
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+      btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    }
+
+    // No hay restablecimiento automático: el participante pide su contraseña por
+    // WhatsApp a la academia (el administrador la consulta en "Asignar Usuarios").
+    function handleForgotPassword() {
+      const user = document.getElementById('login-username').value.trim();
+      const msg = activeLoginTab === 'admin'
+        ? 'Hola, necesito recuperar mi acceso de colaborador al Campus Virtual de SST.' + (user ? ' Mi usuario es: ' + user : '')
+        : 'Hola, olvidé mi contraseña del Campus Virtual de SST.' + (user ? ' Mi correo/usuario es: ' + user : '');
+      window.open(`https://wa.me/${SITE_CONTACT.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     }
 
     function fillDemoCredentials(type) {
@@ -2767,6 +2810,11 @@
       const guestBadge = document.getElementById('header-guest-badge');
 
       updateMigrateButtonVisibility();
+      const homeNav = document.getElementById('header-home-nav');
+      if (homeNav) {
+        const hideNav = isStaffUser(currentUser);
+        homeNav.classList.toggle('lg:flex', !hideNav);
+      }
       if (currentUser) {
         userBadge.classList.remove('hidden');
         userBadge.classList.add('flex');
@@ -2791,7 +2839,7 @@
 
       // La portada ocupa todo el ancho; el resto de vistas viven dentro de <main>.
       const appMain = document.getElementById('app-main');
-      if (appMain) appMain.classList.toggle('hidden', viewName === 'home');
+      if (appMain) appMain.classList.toggle('hidden', viewName === 'home' || viewName === 'login');
       if (viewName !== 'home') setActiveHomeLink(null);
       if (viewName === 'login') updateLoginPendingBanner();
 
@@ -2852,6 +2900,7 @@
         publicCatalogState = 'error';
       }
       renderHome();
+      loadSiteFaq();
     }
 
     // Ficha pública de un curso (lo único que se publica sin iniciar sesión).
@@ -2908,6 +2957,7 @@
     }
 
     function renderHome() {
+      renderHomeFaq();
       renderHomeCollage();
       renderHomeCatalog();
       renderHomePricing();
@@ -3102,6 +3152,135 @@
       const modal = document.getElementById('modal-public-course');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
+    }
+
+
+    // ---- Preguntas frecuentes (editables desde el panel; documento publicSite/faq) ----
+    const DEFAULT_FAQ = [
+      { q: '¿Cuánto tiempo tengo para terminar un curso?', a: 'Avanzas a tu propio ritmo. Una vez autorizado tu acceso, puedes entrar a los módulos las veces que necesites desde cualquier dispositivo.' },
+      { q: '¿Cuándo se autoriza mi inscripción?', a: 'Al enviar tu solicitud, nuestro equipo recibe un aviso inmediato. Te contactamos para confirmar los detalles y, en cuanto se autoriza, el curso aparece desbloqueado en tu cuenta.' },
+      { q: '¿Qué constancia recibo?', a: 'Al aprobar la evaluación final obtienes una constancia de capacitación con código de verificación, que cualquier persona puede validar.' },
+      { q: 'Ya tengo cuenta, ¿cómo pido otro curso?', a: 'Da clic en "Inscribirme" en el curso que te interese e inicia sesión con tu usuario; la solicitud se envía automáticamente. También puedes pedirlo desde tu aula virtual.' },
+      { q: '¿Pueden capacitar a todo mi equipo?', a: 'Sí. Escríbenos desde la sección de precios y te enviamos una cotización por grupo.' }
+    ];
+    let siteFaq = DEFAULT_FAQ.slice();
+    let faqDraft = null;
+    let faqDirty = false;
+
+    async function loadSiteFaq() {
+      if (!firebaseReady) return;
+      try {
+        const doc = await db.collection('publicSite').doc('faq').get();
+        if (doc.exists && Array.isArray(doc.data().items)) {
+          siteFaq = doc.data().items.filter(i => i && (i.q || '').trim());
+          renderHomeFaq();
+        }
+      } catch (err) {
+        console.warn('No se pudieron leer las preguntas frecuentes (publicSite/faq):', err);
+      }
+    }
+
+    function renderHomeFaq() {
+      const box = document.getElementById('home-faq-list');
+      if (!box) return;
+      if (!siteFaq.length) {
+        box.innerHTML = `<p class="text-sm text-slate-500">Escríbenos si tienes cualquier duda: con gusto te ayudamos.</p>`;
+        return;
+      }
+      box.innerHTML = siteFaq.map(i => `
+        <details class="group bg-white border border-slate-200 rounded-2xl px-5 py-4 open:shadow-sm">
+          <summary class="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900">${escapeHtml(i.q)}<i class="faq-icon fa-solid fa-plus text-brand-600 transition-transform"></i></summary>
+          <p class="text-xs text-slate-600 leading-relaxed mt-3 whitespace-pre-line">${escapeHtml(i.a)}</p>
+        </details>`).join('');
+    }
+
+    async function startFaqEditor() {
+      if (faqDraft && faqDirty) { renderFaqEditor(); return; }
+      faqDraft = JSON.parse(JSON.stringify(siteFaq));
+      faqDirty = false;
+      renderFaqEditor();
+      // Trae la versión más reciente por si otra persona la cambió.
+      try {
+        const doc = await db.collection('publicSite').doc('faq').get();
+        if (doc.exists && Array.isArray(doc.data().items) && !faqDirty) {
+          siteFaq = doc.data().items;
+          faqDraft = JSON.parse(JSON.stringify(siteFaq));
+          renderFaqEditor();
+        }
+      } catch (err) { console.warn(err); }
+    }
+
+    function setFaqDirty(v) {
+      faqDirty = v;
+      const flag = document.getElementById('faq-dirty-flag');
+      if (flag) flag.classList.toggle('hidden', !v);
+    }
+
+    function renderFaqEditor() {
+      const box = document.getElementById('admin-faq-list');
+      if (!box || !faqDraft) return;
+      setFaqDirty(faqDirty);
+      if (!faqDraft.length) {
+        box.innerHTML = `<div class="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-xs text-slate-500">No hay preguntas. Usa "Agregar pregunta" para crear la primera.</div>`;
+        return;
+      }
+      box.innerHTML = faqDraft.map((it, i) => `
+        <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex gap-3">
+          <div class="flex flex-col items-center gap-1 pt-1">
+            <span class="w-7 h-7 rounded-full bg-brand-50 text-brand-700 font-black text-[11px] flex items-center justify-center">${i + 1}</span>
+            <button onclick="moveFaqItem(${i}, -1)" ${i === 0 ? 'disabled' : ''} class="px-1 text-slate-400 hover:text-brand-600 disabled:opacity-20" title="Subir"><i class="fa-solid fa-caret-up"></i></button>
+            <button onclick="moveFaqItem(${i}, 1)" ${i === faqDraft.length - 1 ? 'disabled' : ''} class="px-1 text-slate-400 hover:text-brand-600 disabled:opacity-20" title="Bajar"><i class="fa-solid fa-caret-down"></i></button>
+          </div>
+          <div class="flex-1 space-y-2 text-xs">
+            <input type="text" value="${escapeHtml(it.q)}" oninput="updateFaqItem(${i}, 'q', this.value)" placeholder="Pregunta" class="w-full px-3.5 py-2.5 font-bold bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+            <textarea rows="3" oninput="updateFaqItem(${i}, 'a', this.value)" placeholder="Respuesta" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">${escapeHtml(it.a)}</textarea>
+          </div>
+          <button onclick="removeFaqItem(${i})" class="self-start w-8 h-8 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition" title="Eliminar pregunta"><i class="fa-solid fa-trash"></i></button>
+        </div>`).join('');
+    }
+
+    function updateFaqItem(i, field, value) { faqDraft[i][field] = value; setFaqDirty(true); }
+    function addFaqItem() {
+      if (!faqDraft) faqDraft = JSON.parse(JSON.stringify(siteFaq));
+      faqDraft.push({ q: '', a: '' });
+      setFaqDirty(true);
+      renderFaqEditor();
+      const inputs = document.querySelectorAll('#admin-faq-list input');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }
+    function removeFaqItem(i) {
+      if (!confirm('¿Eliminar esta pregunta?')) return;
+      faqDraft.splice(i, 1); setFaqDirty(true); renderFaqEditor();
+    }
+    function moveFaqItem(i, d) {
+      const j = i + d;
+      if (j < 0 || j >= faqDraft.length) return;
+      [faqDraft[i], faqDraft[j]] = [faqDraft[j], faqDraft[i]];
+      setFaqDirty(true); renderFaqEditor();
+    }
+
+    async function saveFaq() {
+      const items = faqDraft.map(i => ({ q: (i.q || '').trim(), a: (i.a || '').trim() }));
+      const incomplete = items.findIndex(i => !i.q || !i.a);
+      if (incomplete !== -1) {
+        showToast(`La pregunta #${incomplete + 1} necesita pregunta y respuesta.`, 'error');
+        return;
+      }
+      const btn = document.getElementById('btn-save-faq');
+      btn.disabled = true; btn.classList.add('opacity-60');
+      try {
+        await db.collection('publicSite').doc('faq').set({ items, updatedAt: new Date().toISOString() });
+        siteFaq = items;
+        faqDraft = JSON.parse(JSON.stringify(items));
+        setFaqDirty(false);
+        renderFaqEditor();
+        renderHomeFaq();
+        showToast('Preguntas frecuentes actualizadas en la portada.', 'success');
+      } catch (err) {
+        showToast('No se pudieron guardar: ' + err.message + '. Revisa la regla de Firestore para "publicSite".', 'error');
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
     }
 
     // ---- Inscripción directa desde la portada ----
@@ -4220,7 +4399,7 @@
       if (tabName === 'staff' && !isPrimaryAdmin(currentUser)) {
         tabName = 'courses';
       }
-      const tabs = ['courses', 'authorizations', 'students', 'tracking', 'badges', 'staff'];
+      const tabs = ['courses', 'authorizations', 'students', 'tracking', 'badges', 'faq', 'staff'];
       tabs.forEach(t => {
         const content = document.getElementById(`admin-tab-${t}`);
         const btn = document.getElementById(`admin-tab-btn-${t}`);
@@ -4230,6 +4409,7 @@
         }
       });
 
+      if (tabName === 'faq') startFaqEditor();
       const targetContent = document.getElementById(`admin-tab-${tabName}`);
       const targetBtn = document.getElementById(`admin-tab-btn-${tabName}`);
       if (targetContent) targetContent.classList.remove('hidden');
@@ -4292,7 +4472,7 @@
     function renderAdminCoursesTable() {
       const tbody = document.getElementById('admin-courses-tbody');
       if (coursesData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">No hay cursos registrados todavía.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No hay cursos registrados todavía.</td></tr>`;
         return;
       }
 
@@ -4332,6 +4512,22 @@
             </td>
             <td class="p-4 text-slate-600">${qCount} reactivos</td>
             <td class="p-4 text-brand-700 font-bold">${c.passingScore}%</td>
+            <td class="p-4">
+              ${(() => {
+                const on = c.showOnHome !== false;
+                const pr = formatCoursePrice(typeof c.price === 'number' ? c.price : null);
+                return `<div class="flex items-center gap-3">
+                  <button onclick="toggleCoursePublic('${c.id}')" role="switch" aria-checked="${on}" title="${on ? 'Publicado en la portada: clic para ocultarlo' : 'Oculto: clic para publicarlo en la portada'}"
+                    class="relative w-11 h-6 flex-shrink-0 rounded-full transition ${on ? 'bg-emerald-500' : 'bg-slate-300'}">
+                    <span class="absolute top-0.5 ${on ? 'left-[22px]' : 'left-0.5'} w-5 h-5 rounded-full bg-white shadow transition-all"></span>
+                  </button>
+                  <div class="leading-tight">
+                    <span class="block text-[11px] font-bold ${on ? 'text-emerald-700' : 'text-slate-400'}">${on ? 'Publicado' : 'Oculto'}</span>
+                    <span class="block text-[11px] text-slate-500">${pr.main}</span>
+                  </div>
+                </div>`;
+              })()}
+            </td>
             <td class="p-4 text-right space-x-2">
               <button onclick="previewCourseAsStudent('${c.id}')" class="px-2.5 py-1.5 text-amber-600 hover:text-amber-800 font-bold rounded-lg hover:bg-amber-50 transition" title="Ver el curso como lo verá el participante">
                 <i class="fa-solid fa-eye"></i> Vista previa
@@ -5205,6 +5401,18 @@
         closeCourseModal();
       } catch (err) {
         showToast('No se pudo guardar el curso: ' + err.message, 'error');
+      }
+    }
+
+    async function toggleCoursePublic(courseId) {
+      const c = coursesData.find(x => x.id === courseId);
+      if (!c) return;
+      const next = c.showOnHome === false;
+      try {
+        await db.collection('courses').doc(courseId).update({ showOnHome: next });
+        showToast(next ? `"${c.title}" ya aparece en la portada.` : `"${c.title}" se ocultó de la portada.`, next ? 'success' : 'info');
+      } catch (err) {
+        showToast('No se pudo cambiar la publicación del curso: ' + err.message, 'error');
       }
     }
 
