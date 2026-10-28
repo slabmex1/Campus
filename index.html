@@ -162,6 +162,7 @@
         <button onclick="goHome('catalogo')" data-home-link="catalogo" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Catálogo de cursos</button>
         <button onclick="goHome('precios')" data-home-link="precios" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Precios</button>
         <button onclick="goHome('preguntas')" data-home-link="preguntas" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Preguntas frecuentes</button>
+        <button onclick="goHome('contacto')" data-home-link="contacto" class="px-3 py-2 rounded-lg hover:text-brand-700 transition">Contacto</button>
       </nav>
 
       <!-- Barra de Usuario y Navegación de Sesión -->
@@ -290,9 +291,9 @@
               <a id="home-quote-whatsapp" target="_blank" rel="noopener" class="w-full px-5 py-3 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-sm transition flex items-center justify-center gap-2">
                 <i class="fa-brands fa-whatsapp text-base"></i> Cotizar por WhatsApp
               </a>
-              <a id="home-quote-email" class="w-full px-5 py-3 rounded-full border border-white/25 hover:bg-white/10 text-white font-bold text-sm transition flex items-center justify-center gap-2">
-                <i class="fa-regular fa-envelope"></i> Escribir un correo
-              </a>
+              <button type="button" onclick="openContactForm('Capacitación para empresas (grupo)')" class="w-full px-5 py-3 rounded-full border border-white/25 hover:bg-white/10 text-white font-bold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-regular fa-envelope"></i> Solicitar cotización
+              </button>
             </div>
           </div>
         </aside>
@@ -315,6 +316,57 @@
         <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Dudas comunes</p>
         <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1">Preguntas <span class="text-brand-600">frecuentes</span></h2>
         <div id="home-faq-list" class="home-faq mt-7 space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- Contacto -->
+    <section id="home-contacto" class="bg-slate-50 border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 grid lg:grid-cols-12 gap-10 items-start">
+        <div class="lg:col-span-5 space-y-5">
+          <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Contacto</p>
+          <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Cuéntanos qué necesita <span class="text-brand-600">tu equipo.</span></h2>
+          <p class="text-sm text-slate-600 leading-relaxed">Resolvemos tus dudas sobre los cursos, te ayudamos a elegir el adecuado y cotizamos grupos para tu empresa. Te contactamos por correo o WhatsApp.</p>
+          <ul class="space-y-3 text-sm text-slate-700">
+            <li class="flex items-center gap-3"><i class="fa-solid fa-circle-check text-brand-600"></i> Respuesta personalizada</li>
+            <li class="flex items-center gap-3"><i class="fa-solid fa-circle-check text-brand-600"></i> Cotizaciones para grupos y empresas</li>
+            <li class="flex items-center gap-3"><i class="fa-solid fa-circle-check text-brand-600"></i> Constancias con código de verificación</li>
+          </ul>
+          <a id="home-contact-whatsapp" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:text-emerald-800"><i class="fa-brands fa-whatsapp text-lg"></i> ¿Prefieres WhatsApp? Escríbenos directo</a>
+        </div>
+
+        <form id="home-contact-form" onsubmit="submitContactForm(event)" novalidate class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-900/5 p-6 sm:p-8 space-y-4 text-sm">
+          <label class="block">
+            <span class="block font-bold text-slate-800 mb-1.5">Nombre</span>
+            <input name="nombre" required maxlength="120" autocomplete="name" placeholder="Tu nombre completo" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+          </label>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="block">
+              <span class="block font-bold text-slate-800 mb-1.5">Correo</span>
+              <input name="email" type="email" required maxlength="160" autocomplete="email" placeholder="nombre@empresa.com" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+            </label>
+            <label class="block">
+              <span class="block font-bold text-slate-800 mb-1.5">WhatsApp</span>
+              <input name="whatsapp" type="tel" required maxlength="30" autocomplete="tel" placeholder="55 0000 0000" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+            </label>
+          </div>
+          <label class="block">
+            <span class="block font-bold text-slate-800 mb-1.5">Empresa <span class="font-medium text-slate-400">(opcional)</span></span>
+            <input name="empresa" maxlength="160" autocomplete="organization" placeholder="Nombre de tu empresa" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+          </label>
+          <label class="block">
+            <span class="block font-bold text-slate-800 mb-1.5">Me interesa</span>
+            <select name="interes" id="home-contact-interes" required class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition"></select>
+          </label>
+          <label class="block">
+            <span class="block font-bold text-slate-800 mb-1.5">Mensaje <span class="font-medium text-slate-400">(opcional)</span></span>
+            <textarea name="mensaje" rows="4" maxlength="1000" placeholder="Cuéntanos sobre tu equipo o tus dudas" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition"></textarea>
+          </label>
+          <input type="text" name="sitio" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] w-px h-px opacity-0">
+          <button id="home-contact-submit" type="submit" class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-sm shadow-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Enviar solicitud
+          </button>
+          <p id="home-contact-status" role="status" class="hidden text-sm font-semibold rounded-xl px-4 py-3"></p>
+        </form>
       </div>
     </section>
 
@@ -884,6 +936,10 @@
           <button id="admin-tab-btn-badges" onclick="switchAdminTab('badges')" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
             <i class="fa-solid fa-medal"></i> Insignias y Rutas
           </button>
+          <button id="admin-tab-btn-contact" onclick="switchAdminTab('contact')" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+            <i class="fa-solid fa-envelope-open-text"></i> Solicitudes de Contacto
+            <span id="badge-contact-count" class="hidden px-2 py-0.5 text-[10px] rounded-full bg-emerald-500 text-white font-extrabold">0</span>
+          </button>
           <button id="admin-tab-btn-faq" onclick="switchAdminTab('faq')" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
             <i class="fa-solid fa-circle-question"></i> Preguntas Frecuentes
           </button>
@@ -921,6 +977,18 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- TAB: SOLICITUDES DE CONTACTO DE LA PORTADA -->
+        <div id="admin-tab-contact" class="hidden p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="font-black text-slate-900 text-base">Solicitudes de Contacto</h2>
+              <p class="text-xs text-slate-500">Mensajes enviados desde el formulario "Contacto" de la portada. También te llega un aviso por WhatsApp con cada uno.</p>
+            </div>
+            <div class="grid grid-cols-3 p-1 bg-slate-100 rounded-xl border border-slate-200 text-[11px] font-bold" id="contact-filter-tabs"></div>
+          </div>
+          <div id="admin-contact-list" class="space-y-3"></div>
         </div>
 
         <!-- TAB: PREGUNTAS FRECUENTES DE LA PORTADA -->
@@ -2122,7 +2190,7 @@
       navigateTo('home');
       renderHome();
       const initialHash = (location.hash || '').replace('#', '');
-      if (['catalogo', 'precios', 'preguntas'].includes(initialHash)) setTimeout(() => goHome(initialHash), 300);
+      if (['catalogo', 'precios', 'preguntas', 'contacto'].includes(initialHash)) setTimeout(() => goHome(initialHash), 300);
       updateAdminDashboardStats();
 
       if (!firebaseReady) {
@@ -2203,6 +2271,7 @@
           afterDataChange();
         }, 'alumnos');
         listenCollection(db.collection('enrollments'), list => { enrollmentsDB = list; afterDataChange(); }, 'inscripciones');
+        listenContactRequests();
         listenCollection(db.collection('studentBadges'), list => { studentBadgesDB = list; afterDataChange(); }, 'insignias otorgadas');
         if (isPrimaryAdmin(currentUser)) {
           listenCollection(db.collection('staff'), list => { staffDB = list; afterDataChange(); }, 'colaboradores');
@@ -2783,7 +2852,7 @@
       currentCourseId = null;
       isCoursePreview = false;
       previewEnrollment = null;
-      studentsDB = []; enrollmentsDB = []; studentBadgesDB = []; staffDB = []; coursesData = [];
+      studentsDB = []; enrollmentsDB = []; studentBadgesDB = []; staffDB = []; coursesData = []; contactRequestsDB = []; contactRequestsError = '';
       dbReady = false;
       publicSyncCache = null;
       updateHeaderSessionUI();
@@ -2886,8 +2955,8 @@
       const mail = `mailto:${SITE_CONTACT.email}?subject=${encodeURIComponent('Cotización de capacitación - Campus Virtual de SST')}`;
       const set = (id, attr, val, text) => { const el = document.getElementById(id); if (!el) return; el.setAttribute(attr, val); if (text !== undefined) el.innerHTML = text; };
       set('home-quote-whatsapp', 'href', wa);
-      set('home-quote-email', 'href', mail);
       set('home-footer-email', 'href', `mailto:${SITE_CONTACT.email}`, `<i class="fa-regular fa-envelope mr-1"></i>${SITE_CONTACT.email}`);
+      set('home-contact-whatsapp', 'href', `https://wa.me/${SITE_CONTACT.whatsapp}?text=${encodeURIComponent('Hola, tengo una pregunta sobre los cursos del Campus Virtual de SST.')}`);
       set('home-footer-whatsapp', 'href', `https://wa.me/${SITE_CONTACT.whatsapp}`, `<i class="fa-brands fa-whatsapp mr-1"></i>${SITE_CONTACT.whatsappLabel}`);
       const y = document.getElementById('home-year'); if (y) y.textContent = new Date().getFullYear();
       setupHomeScrollSpy();
@@ -2962,6 +3031,7 @@
 
     function renderHome() {
       renderHomeFaq();
+      populateContactInterest();
       renderHomeCollage();
       renderHomeCatalog();
       renderHomePricing();
@@ -3287,6 +3357,169 @@
       }
     }
 
+
+    // ---- Formulario de contacto de la portada (colección contactRequests) ----
+    // academiasst no tiene servidor propio: el mensaje se guarda en Firestore
+    // (solo el personal lo puede leer) y se avisa por WhatsApp con CallMeBot.
+    let contactRequestsDB = [];
+    let contactRequestsError = '';
+    let contactFilter = 'nuevo';
+
+    function populateContactInterest(preselect) {
+      const sel = document.getElementById('home-contact-interes');
+      if (!sel) return;
+      const current = preselect || sel.value;
+      const titles = getHomeCourses().map(c => c.title);
+      const opts = ['Información general', 'Capacitación para empresas (grupo)', ...titles, 'Otro'];
+      sel.innerHTML = `<option value="">Selecciona una opción</option>` + opts.map(o => `<option>${escapeHtml(o)}</option>`).join('');
+      if (current && opts.includes(current)) sel.value = current;
+    }
+
+    function openContactForm(interest) {
+      goHome('contacto');
+      populateContactInterest(interest);
+      setTimeout(() => { const f = document.getElementById('home-contact-form'); if (f) f.nombre.focus({ preventScroll: true }); }, 700);
+    }
+
+    function setContactStatus(type, text) {
+      const st = document.getElementById('home-contact-status');
+      st.className = 'text-sm font-semibold rounded-xl px-4 py-3 ' + (type === 'ok'
+        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+        : type === 'err' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-600');
+      st.textContent = text;
+    }
+
+    async function submitContactForm(e) {
+      e.preventDefault();
+      const f = e.target;
+      f.querySelectorAll('.ring-rose-400').forEach(x => x.classList.remove('ring-2', 'ring-rose-400', 'border-rose-400'));
+      if (f.sitio.value) { setContactStatus('ok', '¡Gracias! Recibimos tu solicitud.'); f.reset(); return; } // trampa anti-spam
+
+      const val = n => (f[n].value || '').trim();
+      const bad = [];
+      if (!val('nombre')) bad.push(f.nombre);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email'))) bad.push(f.email);
+      if (val('whatsapp').replace(/\D/g, '').length < 10) bad.push(f.whatsapp);
+      if (!val('interes')) bad.push(f.interes);
+      if (bad.length) {
+        bad.forEach(x => x.classList.add('ring-2', 'ring-rose-400', 'border-rose-400'));
+        bad[0].focus();
+        setContactStatus('err', 'Revisa los campos marcados: nombre, correo válido, WhatsApp (10 dígitos) y tu interés.');
+        return;
+      }
+      try {
+        const last = parseInt(localStorage.getItem('campusContactSentAt') || '0', 10);
+        if (Date.now() - last < 60000) { setContactStatus('err', 'Ya recibimos un mensaje tuyo hace un momento. Espera un minuto para enviar otro.'); return; }
+      } catch (err) {}
+      if (!firebaseReady) { setContactStatus('err', 'No se pudo enviar en este momento. Escríbenos por WhatsApp.'); return; }
+
+      const btn = document.getElementById('home-contact-submit');
+      btn.disabled = true; btn.classList.add('opacity-60');
+      setContactStatus('info', 'Enviando…');
+      const data = {
+        nombre: val('nombre').slice(0, 120),
+        email: val('email').toLowerCase().slice(0, 160),
+        whatsapp: val('whatsapp').slice(0, 30),
+        empresa: val('empresa').slice(0, 160),
+        interes: val('interes').slice(0, 200),
+        mensaje: val('mensaje').slice(0, 1000),
+        status: 'nuevo',
+        origen: 'portada',
+        createdAt: new Date().toISOString()
+      };
+      try {
+        await db.collection('contactRequests').add(data);
+        try { localStorage.setItem('campusContactSentAt', String(Date.now())); } catch (err) {}
+        const aviso = encodeURIComponent(`Nuevo contacto Campus SST: ${data.nombre} (${data.whatsapp}) - ${data.interes}${data.empresa ? ' - ' + data.empresa : ''}`);
+        fetch(`https://api.callmebot.com/whatsapp.php?phone=5215573446150&text=${aviso}&apikey=9610624`).catch(() => {});
+        f.reset();
+        populateContactInterest();
+        setContactStatus('ok', '¡Gracias! Recibimos tu solicitud y te contactaremos muy pronto.');
+      } catch (err) {
+        console.error('No se pudo guardar el contacto:', err);
+        setContactStatus('err', 'No se pudo enviar. Intenta de nuevo o escríbenos por WhatsApp.');
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
+    }
+
+    // Panel: escucha las solicitudes sin mostrar errores en pantalla si la regla aún no existe.
+    function listenContactRequests() {
+      const unsub = db.collection('contactRequests').onSnapshot(
+        snap => { contactRequestsDB = snap.docs.map(d => ({ id: d.id, ...d.data() })); contactRequestsError = ''; renderAdminContactList(); },
+        err => { console.warn('contactRequests:', err); contactRequestsError = err.message; renderAdminContactList(); }
+      );
+      firestoreUnsubscribers.push(unsub);
+    }
+
+    function setContactFilter(f) { contactFilter = f; renderAdminContactList(); }
+
+    function renderAdminContactList() {
+      const nuevos = contactRequestsDB.filter(r => r.status !== 'atendido').length;
+      const badge = document.getElementById('badge-contact-count');
+      if (badge) { badge.textContent = nuevos; badge.classList.toggle('hidden', nuevos === 0); }
+      const box = document.getElementById('admin-contact-list');
+      const tabs = document.getElementById('contact-filter-tabs');
+      if (!box) return;
+      const counts = { nuevo: nuevos, atendido: contactRequestsDB.length - nuevos, todos: contactRequestsDB.length };
+      const labels = { nuevo: 'Nuevos', atendido: 'Atendidos', todos: 'Todos' };
+      tabs.innerHTML = Object.keys(labels).map(k => `<button onclick="setContactFilter('${k}')" class="px-3 py-1.5 rounded-lg transition ${contactFilter === k ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">${labels[k]} (${counts[k]})</button>`).join('');
+
+      if (contactRequestsError) {
+        box.innerHTML = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900"><i class="fa-solid fa-triangle-exclamation mr-1"></i> No se pueden leer las solicitudes. Falta publicar la regla de Firestore para <b>contactRequests</b>.</div>`;
+        return;
+      }
+      const list = contactRequestsDB
+        .filter(r => contactFilter === 'todos' || (contactFilter === 'atendido' ? r.status === 'atendido' : r.status !== 'atendido'))
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+      if (!list.length) {
+        box.innerHTML = `<div class="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-xs text-slate-500"><i class="fa-regular fa-envelope text-3xl text-slate-300 mb-2 block"></i>${contactFilter === 'nuevo' ? 'No hay solicitudes nuevas.' : 'No hay solicitudes en esta vista.'}</div>`;
+        return;
+      }
+      box.innerHTML = list.map(r => {
+        const fecha = r.createdAt ? new Date(r.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+        const digits = String(r.whatsapp || '').replace(/\D/g, '');
+        const wa = digits.length === 10 ? '52' + digits : digits;
+        const saludo = encodeURIComponent(`Hola ${r.nombre || ''}, te escribimos del Campus Virtual de SST sobre tu solicitud: ${r.interes || ''}.`);
+        const done = r.status === 'atendido';
+        return `
+          <div class="p-4 sm:p-5 bg-white border ${done ? 'border-slate-200' : 'border-emerald-200 ring-1 ring-emerald-100'} rounded-2xl shadow-sm space-y-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="font-black text-slate-900 text-sm">${escapeHtml(r.nombre)} ${done ? '<span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">Atendido</span>' : '<span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Nuevo</span>'}</p>
+                <p class="text-[11px] text-slate-500">${escapeHtml(fecha)}${r.empresa ? ' · <i class="fa-solid fa-building"></i> ' + escapeHtml(r.empresa) : ''}</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-brand-50 text-brand-700">${escapeHtml(r.interes)}</span>
+            </div>
+            ${r.mensaje ? `<p class="text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 rounded-xl p-3">${escapeHtml(r.mensaje)}</p>` : ''}
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              ${wa ? `<a href="https://wa.me/${wa}?text=${saludo}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(r.whatsapp)}</a>` : ''}
+              <button onclick="copyContactEmail('${escapeHtml(r.email)}')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200" title="Copiar correo"><i class="fa-regular fa-copy"></i> ${escapeHtml(r.email)}</button>
+              <span class="flex-1"></span>
+              <button onclick="setContactStatusDoc('${r.id}', '${done ? 'nuevo' : 'atendido'}')" class="px-3 py-1.5 rounded-lg font-bold ${done ? 'text-slate-600 hover:bg-slate-100' : 'bg-brand-600 text-white hover:bg-brand-700'}">${done ? '<i class="fa-solid fa-rotate-left"></i> Marcar como nuevo' : '<i class="fa-solid fa-check"></i> Marcar atendido'}</button>
+              ${isPrimaryAdmin(currentUser) ? `<button onclick="deleteContactRequest('${r.id}')" class="px-2.5 py-1.5 rounded-lg text-rose-500 hover:bg-rose-50" title="Eliminar"><i class="fa-solid fa-trash"></i></button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function copyContactEmail(email) {
+      (navigator.clipboard ? navigator.clipboard.writeText(email) : Promise.reject())
+        .then(() => showToast('Correo copiado: ' + email, 'success'))
+        .catch(() => showToast(email, 'info'));
+    }
+
+    async function setContactStatusDoc(id, status) {
+      try { await db.collection('contactRequests').doc(id).update({ status }); }
+      catch (err) { showToast('No se pudo actualizar: ' + err.message, 'error'); }
+    }
+
+    async function deleteContactRequest(id) {
+      if (!confirm('¿Eliminar esta solicitud de contacto?')) return;
+      try { await db.collection('contactRequests').doc(id).delete(); }
+      catch (err) { showToast('No se pudo eliminar: ' + err.message, 'error'); }
+    }
+
     // ---- Inscripción directa desde la portada ----
     function savePendingEnrollment() {
       try {
@@ -3407,7 +3640,7 @@
         if (document.getElementById('view-home').classList.contains('hidden')) return;
         entries.forEach(en => { if (en.isIntersecting) setActiveHomeLink(en.target.id.replace('home-', '')); });
       }, { rootMargin: '-45% 0px -50% 0px' });
-      ['inicio', 'catalogo', 'precios', 'preguntas'].forEach(s => { const el = document.getElementById(`home-${s}`); if (el) io.observe(el); });
+      ['inicio', 'catalogo', 'precios', 'preguntas', 'contacto'].forEach(s => { const el = document.getElementById(`home-${s}`); if (el) io.observe(el); });
     }
 
     // ---- Sincronización courses -> publicCourses (la hace el personal) ----
@@ -4403,7 +4636,7 @@
       if (tabName === 'staff' && !isPrimaryAdmin(currentUser)) {
         tabName = 'courses';
       }
-      const tabs = ['courses', 'authorizations', 'students', 'tracking', 'badges', 'faq', 'staff'];
+      const tabs = ['courses', 'authorizations', 'students', 'tracking', 'badges', 'contact', 'faq', 'staff'];
       tabs.forEach(t => {
         const content = document.getElementById(`admin-tab-${t}`);
         const btn = document.getElementById(`admin-tab-btn-${t}`);
@@ -4426,6 +4659,7 @@
 
     function renderAdminAll() {
       renderAdminCoursesTable();
+      renderAdminContactList();
       renderAdminAuthorizationsTable();
       renderAdminStudentsTable();
       renderAdminTrackingTable();
