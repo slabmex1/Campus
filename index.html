@@ -3976,7 +3976,7 @@
         if (!r.ok || !d.url) throw new Error(d.error || 'No pudimos abrir Mercado Pago.');
         location.href = d.url;
       } catch (err) {
-        showToast(err.message + ' También puedes pagar con los datos bancarios de tu correo de bienvenida.', 'error');
+        showToast(err.message + ' Si el problema sigue, escríbenos por WhatsApp desde la sección de contacto.', 'error');
         if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
       }
     }
@@ -3988,7 +3988,7 @@
       const textos = {
         ok: ['¡Pago recibido! En unos momentos se autoriza tu curso y te llega un correo. Inicia sesión para entrar.', 'success'],
         pendiente: ['Tu pago está en proceso. En cuanto Mercado Pago lo acredite, se autoriza tu curso y te avisamos por correo.', 'info'],
-        error: ['El pago no se completó. Puedes intentarlo de nuevo desde tu catálogo o usar los datos bancarios de tu correo.', 'error']
+        error: ['El pago no se completó. Puedes intentarlo de nuevo desde tu catálogo o desde el botón de tu correo de bienvenida.', 'error']
       };
       setTimeout(() => showToast(textos[m[1]][0], textos[m[1]][1]), 800);
       history.replaceState(null, '', location.pathname + location.hash);
