@@ -3737,6 +3737,10 @@
       return !!e && (e.status === 'approved' || e.status === 'pending');
     }
 
+    function puedePagarEnLinea(course) {
+      return PAGO_EN_LINEA && typeof course.price === 'number' && course.price > 0;
+    }
+
     function buildStudentCourseCard(course) {
         const enrollment = enrollmentsDB.find(e => e.studentId === currentUser.id && e.courseId === course.id);
         const moduleCount = course.modules ? course.modules.length : 0;
@@ -3766,8 +3770,12 @@
           actionButton = `
             <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center text-xs text-amber-900 space-y-1">
               <span class="font-bold flex items-center justify-center gap-1"><i class="fa-solid fa-hourglass-half"></i> Solicitud Enviada</span>
-              <p class="text-[11px] text-amber-700">El administrador debe autorizar tu acceso para desbloquear los módulos.</p>
+              <p class="text-[11px] text-amber-700">${puedePagarEnLinea(course) ? 'Paga en línea y tu acceso se autoriza en automático.' : 'El administrador debe autorizar tu acceso para desbloquear los módulos.'}</p>
             </div>
+            ${puedePagarEnLinea(course) ? `
+            <button onclick="pagarInscripcion('${enrollment.id}', this)" class="mt-2 w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-sky-500 hover:bg-sky-600 text-white shadow-sm transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-credit-card"></i> Pagar con Mercado Pago
+            </button>` : ''}
           `;
         } else if (enrollment.status === 'rejected') {
           statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">Acceso Denegado</span>`;
@@ -3920,7 +3928,7 @@
     // Crea la solicitud (status 'pending') y avisa por WhatsApp. La usan el
     // catálogo del alumno, la portada pública y el auto-registro.
     async function createEnrollmentRequest(student, courseId, courseTitle) {
-      await db.collection('enrollments').add({
+      const ref = await db.collection('enrollments').add({
         studentId: student.id,
         studentUid: student.uid,
         studentUsername: student.username,
@@ -3936,7 +3944,56 @@
         certDate: null
       });
       alertarNuevaInscripcion(student.name, courseTitle);
+      enviarBienvenidaInscripcion(ref.id);
+      return ref.id;
     }
+
+    // ==================== PAGO EN LÍNEA (Mercado Pago vía kitssst.com) ====================
+    // El servidor de kitssst.com manda el correo de bienvenida (precio, botón de Mercado Pago y datos
+    // bancarios), crea el cobro de cada inscripción y, cuando Mercado Pago confirma el pago, autoriza la
+    // inscripción aquí en el Campus (status 'approved') y avisa al alumno. Código: kitssst/worker/academia.ts.
+    // PAGO_EN_LINEA en false oculta el botón «Pagar con Mercado Pago» del Campus (el correo se sigue enviando).
+    const PAGO_EN_LINEA = true;
+    const ACADEMIA_API = 'https://kitssst.com/planes/api';
+
+    function enviarBienvenidaInscripcion(enrollmentId) {
+      fetch(`${ACADEMIA_API}/academia-bienvenida`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollmentId })
+      }).catch(err => console.warn('No se pudo pedir el correo de bienvenida:', err));
+    }
+
+    async function pagarInscripcion(enrollmentId, btn) {
+      if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+      try {
+        const r = await fetch(`${ACADEMIA_API}/academia-pagar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enrollmentId })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.url) throw new Error(d.error || 'No pudimos abrir Mercado Pago.');
+        location.href = d.url;
+      } catch (err) {
+        showToast(err.message + ' También puedes pagar con los datos bancarios de tu correo de bienvenida.', 'error');
+        if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+      }
+    }
+
+    // Regreso desde Mercado Pago (?pago=ok | pendiente | error).
+    function avisoRegresoDePago() {
+      const m = location.search.match(/[?&]pago=(ok|pendiente|error)/);
+      if (!m) return;
+      const textos = {
+        ok: ['¡Pago recibido! En unos momentos se autoriza tu curso y te llega un correo. Inicia sesión para entrar.', 'success'],
+        pendiente: ['Tu pago está en proceso. En cuanto Mercado Pago lo acredite, se autoriza tu curso y te avisamos por correo.', 'info'],
+        error: ['El pago no se completó. Puedes intentarlo de nuevo desde tu catálogo o usar los datos bancarios de tu correo.', 'error']
+      };
+      setTimeout(() => showToast(textos[m[1]][0], textos[m[1]][1]), 800);
+      history.replaceState(null, '', location.pathname + location.hash);
+    }
+    window.addEventListener('load', avisoRegresoDePago);
 
     async function requestEnrollment(courseId) {
       if (!currentUser || currentUser.role !== 'student') return;
@@ -4810,6 +4867,7 @@
           badge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">Pendiente de Autorización</span>`;
         } else if (enr.status === 'approved') {
           badge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">Acceso Autorizado</span>`;
+          if (enr.paidAt) badge += ` <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-800 border border-sky-200" title="Folio Mercado Pago ${enr.paymentId || ''}"><i class="fa-solid fa-credit-card mr-1"></i>Pagado en línea</span>`;
         } else {
           badge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">Rechazado</span>`;
         }
